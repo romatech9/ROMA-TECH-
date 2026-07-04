@@ -187,3 +187,24 @@ Step-by-step video guide to help you
 </div>
 
 
+<p align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Orbitron&weight=700&size=28&duration=3000&pause=1000&color=FF00FF&center=true&vCenter=true&width=450&lines=MUFASER-X-BOT" alt="MUFASER-X-BOT" />
+</p>
+
+<p align="center">
+  <img width="90" src="https://cdn-icons-png.flaticon.com/512/6160/6160993.png" alt="Lion Logo"/>
+</p>
+
+<p align="center">
+  <!-- TOOLS HUB = AI + OWNER + DOWNLOADS -->
+  <a href="https://your-tools-hub.com">
+    <img src="https://img.shields.io/badge/Ⓐ%20TOOLS%20HUB-A855F7?style=for-the-badge&logo=toolbox&logoColor=white" />
+  </a>
+</p>
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12&height=80&section=footer"/>
+</p>
+
+
+
