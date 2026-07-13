@@ -221,6 +221,16 @@ Step-by-step video guide to help you
 <h3 align="center">📊 ROMA-TECH GitHub Stats</h3>
 
 <p align="center">
+  <img src="https://github-readme-stats.vercel.app/api?username=romatech9&show_icons=true&theme=dark&border_radius=10" />
+</p>
+
+<p align="center">
+  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=romatech9&layout=compact&theme=dark&border_radius=10" />
+</p>
+
+<h3 align="center">📊 ROMA-TECH GitHub Stats</h3>
+
+<p align="center">
   <img src="https://github-readme-stats.vercel.app/api?username=romatech9&show_icons=true&theme=radical&hide_border=true&bg_color=0D1117" alt="ROMA-TECH Stats" />
 </p>
 
