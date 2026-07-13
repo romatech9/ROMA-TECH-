@@ -22,7 +22,19 @@
     <img src="https://img.shields.io/badge/QR%20CODE-8A2BE2?style=for-the-badge&logo=whatsapp&logoColor=white"/>
   </a>
 </p>
+<h3 align="center">📊 ROMA-TECH GitHub Stats</h3>
 
+<p align="center">
+  <img src="https://github-readme-stats.vercel.app/api?username=romatech9&show_icons=true&theme=dark&border_color=FF1493&title_color=FF1493&text_color=FFFFFF&icon_color=FF1493" alt="ROMA-TECH Stats" />
+</p>
+
+<p align="center">
+  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=romatech9&layout=compact&theme=dark&border_color=FF1493&title_color=FF1493&text_color=FFFFFF" alt="ROMA-TECH Languages" />
+</p>
+
+<p align="center">
+  <img src="https://github-readme-streak-stats.herokuapp.com/?user=romatech9&theme=dark&border=FF1493&stroke=FF1493&ring=FF1493&fire=FF1493&currStreakLabel=FF1493" alt="GitHub Streak" />
+</p>
 ### 2. DOWNLOAD THE BOT ZIP
 <p align="center">
   <a href="https://github.com/YOUR_USERNAME/YOUR_REPO/archive/refs/heads/main.zip">
