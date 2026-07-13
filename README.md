@@ -1,6 +1,11 @@
 <div align="center">
     
 # 𝐌𝐔𝐅𝐀𝐒𝐄𝐑-𝐗 𝐁𝐎𝐓
+<h3 align="center">💻 Most Used Languages</h3>
+
+<p align="center">
+  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=romatech9&layout=compact&langs_count=8&theme=radical&bg_color=0D1117&title_color=FF1493&text_color=FFFFFF&border_color=FF1493&hide_border=true" alt="ROMA-TECH Languages" />
+</p>
 <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=700&size=26&duration=3000&pause=1000&color=FF00FF&center=true&vCenter=true&width=500&lines=MUFASER-X+IS+ON+COMING+SOON;POWERFUL+WHATSAPP+BOT;DEVELOPED+BY+ROMA-TECH" alt="Typing SVG"/>
 <img src="https://res.cloudinary.com/dqxlb29uz/image/upload/v1781858976/bwm_uploads/media-1781858976913.jpg" width="30000">
 <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=700&size=26&duration=3000&pause=1000&color=FF6A00&center=true&vCenter=true&width=520&lines=MUFASER-X+IS+STILL;UNDER+DEVELOPMENT;THANK+GOD+FOR+THE+HELP;AND+AM+HAPPY+FOR+THOSE;SAID+THAT+I+CAN'T+MANEGE" alt="Typing SVG"/>
