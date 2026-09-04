@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MUFASER-X | WhatsApp Pairing</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#050505;color:#fff;font-family:Arial,sans-serif;display:grid;place-items:center;padding:20px}.card{width:min(460px,100%);background:#111;border:1px solid #00ff99;border-radius:22px;padding:28px;text-align:center;box-shadow:0 0 30px #00ff9933}h1{color:#33ccff;letter-spacing:3px}.muted{color:#aaa;font-size:14px}.status{margin:20px 0;padding:13px;border:1px solid #333;border-radius:12px}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#777;margin-right:8px}.connected .dot{background:#00ff99}.input{width:100%;padding:14px;margin:10px 0;background:#050505;color:#fff;border:1px solid #33ccff;border-radius:10px;font-size:16px}.btn{width:100%;padding:14px;margin-top:10px;border:1px solid #00ff99;border-radius:10px;background:transparent;color:#00ff99;font-weight:bold;font-size:15px}.btn:disabled{opacity:.5}.box{display:none;margin-top:20px;padding:18px;border:1px solid #33ccff;border-radius:14px}.box.show{display:block}.code{font-size:24px;letter-spacing:4px;color:#00ff99;font-weight:bold;margin:15px 0;word-break:break-word}.qr{max-width:250px;width:100%;background:#fff;padding:5px;border-radius:10px}.error{color:#ff5555;margin-top:10px}.success{color:#00ff99;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>MUFASER-X</h1>
+<p class="muted">WhatsApp Multi-Device Bot · ROMA-TECH</p>
+<div class="status" id="status"><span class="dot"></span><span id="statusText">Enter your WhatsApp number.</span></div>
+<input class="input" id="phone" type="tel" placeholder="2567XXXXXXXXX" autocomplete="tel">
+<button class="btn" id="pairBtn">GET PAIRING CODE</button>
+<button class="btn" id="qrBtn">PAIR WITH QR CODE</button>
+<div id="error" class="error"></div>
+<div id="codeBox" class="box"><div>Your Pairing Code</div><div id="code" class="code">--------</div><button class="btn" id="copyBtn">COPY CODE</button><p class="muted">WhatsApp → Linked Devices → Link with phone number instead.</p></div>
+<div id="qrBox" class="box"><div>Scan QR Code</div><img id="qr" class="qr" alt="QR code"><p class="muted">WhatsApp → Linked Devices → Link a device.</p></div>
+<div id="connectedBox" class="box"><h2 class="success">✅ BOT CONNECTED</h2><p>Session ID has been sent to your WhatsApp Message Yourself chat.</p></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);const phone=$('phone'),pairBtn=$('pairBtn'),qrBtn=$('qrBtn'),statusText=$('statusText'),status=$('status'),error=$('error'),codeBox=$('codeBox'),code=$('code'),qrBox=$('qrBox'),qr=$('qr'),connectedBox=$('connectedBox');let timer=null;
+function clean(){return phone.value.replace(/\D/g,'')}function showError(x){error.textContent=x||''}function setStatus(s){const m={idle:'Enter your WhatsApp number.',session_not_found:'Ready to pair.',generating_code:'Generating pairing code...',waiting_approval:'Waiting for WhatsApp approval...',pairing_code_ready:'Pairing code ready.',qr_ready:'QR code ready — scan it.',connecting:'Connecting to WhatsApp...',connected:'Connected Successfully ✅',disconnected:'Disconnected — reconnecting...',failed:'Connection failed.'};statusText.textContent=m[s]||s||'Waiting...';status.className='status '+(s==='connected'?'connected':'')}
+async function checkStatus(){const p=clean();if(p.length<7)return;try{const r=await fetch('/api/status?phone='+encodeURIComponent(p),{cache:'no-store'});const d=await r.json();setStatus(d.status);if(d.pairingCode){code.textContent=d.pairingCode;codeBox.classList.add('show')}if(d.qrDataUrl){qr.src=d.qrDataUrl;qrBox.classList.add('show')}if(d.connected){connectedBox.classList.add('show');codeBox.classList.remove('show');qrBox.classList.remove('show');clearInterval(timer)}}catch(e){}}
+function poll(){clearInterval(timer);checkStatus();timer=setInterval(checkStatus,1500)}
+pairBtn.onclick=async()=>{showError('');const p=clean();if(p.length<7)return showError('Enter a valid international WhatsApp number.');pairBtn.disabled=true;try{const r=await fetch('/api/pair',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:p})});const d=await r.json();if(!r.ok)throw Error(d.error||'Pairing failed');code.textContent=d.pairingCode||'--------';codeBox.classList.add('show');qrBox.classList.remove('show');setStatus(d.status);poll()}catch(e){showError(e.message)}finally{pairBtn.disabled=false}}
+qrBtn.onclick=async()=>{showError('');const p=clean();if(p.length<7)return showError('Enter a valid international WhatsApp number.');qrBtn.disabled=true;try{const r=await fetch('/api/start-qr',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:p})});const d=await r.json();if(!r.ok)throw Error(d.error||'QR failed');qr.src=d.qrDataUrl;qrBox.classList.add('show');codeBox.classList.remove('show');setStatus(d.status);poll()}catch(e){showError(e.message)}finally{qrBtn.disabled=false}}
+$('copyBtn').onclick=async()=>{try{await navigator.clipboard.writeText(code.textContent.trim());$('copyBtn').textContent='COPIED ✓';setTimeout(()=>$('copyBtn').textContent='COPY CODE',1200)}catch(e){showError('Copy failed. Copy the code manually.')}}
+phone.addEventListener('input',()=>{clearInterval(timer);codeBox.classList.remove('show');qrBox.classList.remove('show');connectedBox.classList.remove('show');setStatus(clean().length>=7?'session_not_found':'idle')});phone.addEventListener('keydown',e=>{if(e.key==='Enter')pairBtn.click()});
+</script>
+</body>
+                              </html>
+                              
