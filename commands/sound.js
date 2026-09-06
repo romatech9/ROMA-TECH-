@@ -23,27 +23,27 @@ const sounds = {
 
   sound1: {
     name: 'Sound 1',
-    url: 'PASTE_SOUND_1_URL_HERE'
+    url: 'https://res.cloudinary.com/vaitzgwv/video/upload/v1788643779/wf3imagjeja0gdwpt8jb.mp4'
   },
 
   sound2: {
     name: 'Sound 2',
-    url: 'PASTE_SOUND_2_URL_HERE'
+    url: 'https://res.cloudinary.com/vaitzgwv/video/upload/v1788642940/lwil81mztdetzhic4hwm.mp3'
   },
 
   sound3: {
     name: 'Sound 3',
-    url: 'PASTE_SOUND_3_URL_HERE'
+    url: 'https://res.cloudinary.com/vaitzgwv/video/upload/v1788643169/qgqb8eloumjdutseqdfj.mp4'
   },
 
   sound4: {
     name: 'Sound 4',
-    url: 'PASTE_SOUND_4_URL_HERE'
+    url: 'https://res.cloudinary.com/vaitzgwv/video/upload/v1788644510/tgckwpujhdyg6ndqt1mw.mp4'
   },
 
   sound5: {
     name: 'Sound 5',
-    url: 'PASTE_SOUND_5_URL_HERE'
+    url: 'https://res.cloudinary.com/vaitzgwv/video/upload/v1788643123/hgnjzupuskd7f6wih9qd.mp4'
   }
 
 };
