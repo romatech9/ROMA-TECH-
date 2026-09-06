@@ -296,8 +296,7 @@ module.exports = {
           text:
             `✅ Upload complete\n\n` +
             `🔗 Link:\n${url}\n\n` +
-            `Powered: By\n` +
-            `MUFASER-X`
+            ` > Powered: By MUFASER-X`
         },
         {
           quoted: msg
