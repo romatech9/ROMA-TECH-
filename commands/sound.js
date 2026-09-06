@@ -227,11 +227,11 @@ module.exports = {
 
   aliases: [
     'sounds',
-    'sound1',
-    'sound2',
-    'sound3',
-    'sound4',
-    'sound5',
+    'sound 1',
+    'sound 2',
+    'sound 3',
+    'sound 4',
+    'sound 5',
     's1',
     's2',
     's3',
