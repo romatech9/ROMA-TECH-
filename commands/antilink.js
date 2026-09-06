@@ -218,7 +218,7 @@ module.exports = {
             text:
               '🛡️ *ANTILINK ENABLED*\n\n' +
               '🚫 Links will be deleted.\n' +
-              '⚠️ The sender will receive a warning.'
+              '⚠️ The sender will receive a warning.' 
           },
           {
             quoted: msg
