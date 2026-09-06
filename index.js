@@ -40,100 +40,61 @@ const {handleAutoViewStatus, handleAutoLikeStatus, handleAutoReact, handleAutoRe
 // This is required for reliable restoration with useMultiFileAuthState.
 
 // ── LOAD COMMANDS ────────────────────────────────────────────
-
 const commands = new Map();
 const commandsDir = path.join(__dirname, 'commands');
 
-if (fs.existsSync(commandsDir)) {
+function loadCommandsRecursive(dir) {
+  if (!fs.existsSync(dir)) return;
 
-  fs.readdirSync(commandsDir)
-    .filter(file => file.endsWith('.js'))
-    .forEach(file => {
+  const items = fs.readdirSync(dir);
 
+  for (const item of items) {
+    const fullPath = path.join(dir, item);
+    const stat = fs.statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      // Go inside subfolder like commands/Roma.js
+      loadCommandsRecursive(fullPath);
+    } else if (item.endsWith('.js')) {
       try {
+        const cmd = require(fullPath);
 
-        const cmd =
-          require(path.join(commandsDir, file));
-
-        if (!cmd || !cmd.name) {
-          console.log(
-            `[Bot] ⚠️ Skipped invalid command: ${file}`
-          );
-          return;
+        if (!cmd ||!cmd.name) {
+          console.log(`[Bot] ⚠️ Skipped invalid command: ${item}`);
+          continue;
         }
 
-        // ====================================================
-        // REGISTER MAIN COMMAND
-        // ====================================================
+        const commandName = String(cmd.name).toLowerCase().trim();
+        commands.set(commandName, cmd);
 
-        const commandName =
-          String(cmd.name)
-            .toLowerCase()
-            .trim();
-
-        commands.set(
-          commandName,
-          cmd
-        );
-
-        // ====================================================
-        // REGISTER ALIASES
-        // ====================================================
-
-        const aliases =
-          Array.isArray(cmd.aliases)
-            ? cmd.aliases
-            : Array.isArray(cmd.alias)
-              ? cmd.alias
-              : [];
+        const aliases = Array.isArray(cmd.aliases)
+         ? cmd.aliases
+          : Array.isArray(cmd.alias)
+           ? cmd.alias
+            : [];
 
         for (const alias of aliases) {
-
           if (!alias) continue;
-
-          const aliasName =
-            String(alias)
-              .toLowerCase()
-              .trim();
-
+          const aliasName = String(alias).toLowerCase().trim();
           if (!aliasName) continue;
-
-          commands.set(
-            aliasName,
-            cmd
-          );
+          // Skip aliases
+          if (aliasName.includes(' ')) continue;
+          commands.set(aliasName, cmd);
         }
 
-        console.log(
-          `[Bot] ✅ Loaded: ${commandName}` +
-          (
-            aliases.length
-              ? ` | Aliases: ${aliases.join(', ')}`
-              : ''
-          )
-        );
-
+        console.log(`[Bot] ✅ Loaded: ${commandName} from ${fullPath.replace(__dirname, '')}` + (aliases.length? ` | Aliases: ${aliases.join(', ')}` : ''));
       } catch (error) {
-
-        console.error(
-          `[Bot] ❌ Failed to load ${file}:`,
-          error
-        );
-
+        console.error(`[Bot] ❌ Failed to load ${item}:`, error.message);
       }
+    }
+  }
+}
 
-    });
-
-  console.log(
-    `[Bot] 📦 Registered ${commands.size} command name(s): ` +
-    `${[...commands.keys()].join(', ')}`
-  );
-
+if (fs.existsSync(commandsDir)) {
+  loadCommandsRecursive(commandsDir);
+  console.log(`[Bot] 📦 Registered ${commands.size} command name(s): ${[...commands.keys()].join(', ')}`);
 } else {
-
-  console.log(
-    '[Bot] ⚠️ Commands directory not found.'
-  );
+  console.log('[Bot] ⚠️ Commands directory not found.');
 }
 // ── MULTI-ACCOUNT STATE ─────────────────────────────────────
 //
