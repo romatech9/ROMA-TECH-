@@ -31,6 +31,7 @@ const { handleAntiSticker } = require('./lib/antisticker');
 const {handleAntiLink} = require('./lib/antilink');
 const { handleAntiBot } = require('./lib/antibot');
 const { handleAntiTag } = require('./lib/antitag');
+const { handleAntiViewOnce } = require('./lib/antiviewonce');
 const { saveAntiDeleteMessage, handleAntiDelete, handleAntiEdit, handleAntiCall } = require('./modules/anti');
 const { handleAntiBadWord } = require('./lib/antibadword');
 const {handleAutoViewStatus, handleAutoLikeStatus, handleAutoReact, handleAutoReactChannel } = require('./modules/auto');
@@ -957,6 +958,7 @@ try {
   if (await handleAntiTag(sock, msg, account)) continue;
   if (await handleAntiBadWord(sock, msg, account)) continue;
   if (await handleAntiSticker(sock, msg, account)) continue;
+  if (await handleAntiViewOnce(sock, msg, account)) continue;
 } catch (e) {
   console.log('[AntiProtection Error]', e.message);
 }
