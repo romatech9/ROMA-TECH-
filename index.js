@@ -25,15 +25,14 @@ const zlib = require('zlib');
 // ── CONFIG ───────────────────────────────────────────────────
 const config = require('./config.js');
 // ============================================================
-// MUFASER-X — ANTI MESSAGE CACHE
+// MUFASER-X — ANTI AND AUTO MESSAGE CACHE
 // ==========================================================
-
 const {handleAntiLink} = require('./lib/antilink');
 
-//MUFASER-X — ANTI MESSAGE CACHE
+const { handleAntiBot } = require('./lib/antibot');
+
 const { saveAntiDeleteMessage, handleAntiDelete, handleAntiEdit, handleAntiCall } = require('./modules/anti');
 
-//MUFASER-X — AUTO MESSAGE CACHE
 const {handleAutoViewStatus, handleAutoLikeStatus, handleAutoReact, handleAutoReactChannel } = require('./modules/auto');
 // ── SESSION STORAGE ─────────────────────────────────────────
 // Each Session ID contains the complete Baileys auth folder, not only creds.json.
@@ -942,7 +941,7 @@ sock.ev.on('messages.upsert', async ({ messages, type }) => {
       // 1. ──Save FIRST,
       saveAntiDeleteMessage(msg);
 
-      // 2.── Auto commands
+      // 2.── all Auto commands
       try {
         await handleAutoViewStatus(sock, msg, account);
         await handleAutoLikeStatus(sock, msg, account);
@@ -951,15 +950,14 @@ sock.ev.on('messages.upsert', async ({ messages, type }) => {
       } catch (e) {
         console.log('[AutoView Error]', e.message);
       }
-// 3── ANTILINK PROTECTION
-    try {
-    if (await handleAntiLink(sock, msg, account)) {
-    continue;
-     }
-       } catch (e) {
-  console.log('[AntiLink Handler Error]', e.message);
-      }
-      // 4.── Anti commands
+// 3 ── ANTILINK + ANTIBOT PROTECTION
+try {
+  if (await handleAntiLink(sock, msg, account)) continue;
+  if (await handleAntiBot(sock, msg, account)) continue;
+} catch (e) {
+  console.log('[AntiProtection Error]', e.message);
+}
+      // 4── Anti commands
       if (msg.message?.protocolMessage) {
         try {
           if (await handleAntiDelete(sock, msg, account)) continue;
