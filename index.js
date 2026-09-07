@@ -27,12 +27,12 @@ const config = require('./config.js');
 // ============================================================
 // MUFASER-X — ANTI AND AUTO MESSAGE CACHE
 // ==========================================================
+const { handleAntiSticker } = require('./lib/antisticker');
 const {handleAntiLink} = require('./lib/antilink');
-
 const { handleAntiBot } = require('./lib/antibot');
-
+const { handleAntiTag } = require('./lib/antitag');
 const { saveAntiDeleteMessage, handleAntiDelete, handleAntiEdit, handleAntiCall } = require('./modules/anti');
-
+const { handleAntiBadWord } = require('./lib/antibadword');
 const {handleAutoViewStatus, handleAutoLikeStatus, handleAutoReact, handleAutoReactChannel } = require('./modules/auto');
 // ── SESSION STORAGE ─────────────────────────────────────────
 // Each Session ID contains the complete Baileys auth folder, not only creds.json.
@@ -950,10 +950,13 @@ sock.ev.on('messages.upsert', async ({ messages, type }) => {
       } catch (e) {
         console.log('[AutoView Error]', e.message);
       }
-// 3 ── ANTILINK + ANTIBOT PROTECTION
+     // 3 ── ANTILINK + ANTISTICKER PROTECTION
 try {
   if (await handleAntiLink(sock, msg, account)) continue;
   if (await handleAntiBot(sock, msg, account)) continue;
+  if (await handleAntiTag(sock, msg, account)) continue;
+  if (await handleAntiBadWord(sock, msg, account)) continue;
+  if (await handleAntiSticker(sock, msg, account)) continue;
 } catch (e) {
   console.log('[AntiProtection Error]', e.message);
 }
