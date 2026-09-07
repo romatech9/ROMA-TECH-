@@ -958,7 +958,7 @@ try {
   if (await handleAntiTag(sock, msg, account)) continue;
   if (await handleAntiBadWord(sock, msg, account)) continue;
   if (await handleAntiSticker(sock, msg, account)) continue;
-  if (await handleAntiViewOnce(sock, msg, account)) continue;
+  await handleAntiViewOnce(sock, msg, account);
 } catch (e) {
   console.log('[AntiProtection Error]', e.message);
 }
