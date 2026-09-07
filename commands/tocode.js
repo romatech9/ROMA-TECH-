@@ -1,18 +1,24 @@
 // ============================================================
 // MUFASER-X — TOCODE
-// Convert screenshot/image of code → text/code
-// NO API REQUIRED
+// Image / Screenshot → Code
 // ============================================================
 
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+const sharp = require('sharp');
+
 const {
   downloadContentFromMessage
 } = require('@whiskeysockets/baileys');
 
 const Tesseract = require('tesseract.js');
+
+
+// ============================================================
+// COMMAND
+// ============================================================
 
 module.exports = {
 
@@ -23,25 +29,31 @@ module.exports = {
     'imgcode'
   ],
 
-  desc: 'Convert an image containing code into text',
+  desc: 'Extract code from an image',
 
   category: 'Tools',
 
-  usage: '.tocode (reply to image)',
+  usage: '.tocode — reply to a code screenshot',
+
 
   async execute(sock, msg, jid) {
 
-    let filePath = null;
+    let originalPath = null;
+    let processedPath = null;
 
     try {
 
-      // --------------------------------------------------------
-      // GET REPLIED MESSAGE
-      // --------------------------------------------------------
+      // ========================================================
+      // FIND REPLIED MESSAGE
+      // ========================================================
+
+      const contextInfo =
+        msg?.message?.extendedTextMessage
+          ?.contextInfo;
 
       const quoted =
-        msg.message?.extendedTextMessage?.contextInfo
-          ?.quotedMessage;
+        contextInfo?.quotedMessage;
+
 
       if (!quoted) {
 
@@ -49,16 +61,19 @@ module.exports = {
           jid,
           {
             text:
-              '❌ Reply to an image containing code with .tocode'
+              '❌ Reply to a screenshot/image containing code with .tocode'
           },
-          { quoted: msg }
+          {
+            quoted: msg
+          }
         );
 
       }
 
-      // --------------------------------------------------------
+
+      // ========================================================
       // CHECK IMAGE
-      // --------------------------------------------------------
+      // ========================================================
 
       if (!quoted.imageMessage) {
 
@@ -66,42 +81,71 @@ module.exports = {
           jid,
           {
             text:
-              '❌ The replied message must be an image/screenshot.'
+              '❌ The message you replied to must be an image/screenshot.'
           },
-          { quoted: msg }
+          {
+            quoted: msg
+          }
         );
 
       }
 
-      // --------------------------------------------------------
-      // DOWNLOAD IMAGE
-      // --------------------------------------------------------
 
-      const imageMessage =
-        quoted.imageMessage;
+      // ========================================================
+      // TEMP FILES
+      // ========================================================
+
+      const timestamp =
+        Date.now();
+
+      originalPath =
+        path.join(
+          os.tmpdir(),
+          `mufaser_tocode_${timestamp}.jpg`
+        );
+
+      processedPath =
+        path.join(
+          os.tmpdir(),
+          `mufaser_tocode_processed_${timestamp}.png`
+        );
+
+
+      // ========================================================
+      // DOWNLOAD IMAGE
+      // ========================================================
+
+      console.log(
+        '[TOCODE] Downloading image...'
+      );
+
 
       const stream =
         await downloadContentFromMessage(
-          imageMessage,
+          quoted.imageMessage,
           'image'
         );
 
-      filePath =
-        path.join(
-          os.tmpdir(),
-          `mufaser_tocode_${Date.now()}.jpg`
-        );
 
       const writeStream =
-        fs.createWriteStream(filePath);
+        fs.createWriteStream(
+          originalPath
+        );
 
-      for await (const chunk of stream) {
 
-        writeStream.write(chunk);
+      for await (
+        const chunk of stream
+      ) {
+
+        writeStream.write(
+          chunk
+        );
 
       }
 
+
       writeStream.end();
+
 
       await new Promise(
         (resolve, reject) => {
@@ -119,27 +163,97 @@ module.exports = {
         }
       );
 
-      // --------------------------------------------------------
+
+      // ========================================================
+      // IMAGE PROCESSING
+      //
+      // Code screenshots normally have:
+      // - small letters
+      // - dark backgrounds
+      // - syntax colors
+      // - thin characters
+      //
+      // We convert it to a cleaner high-resolution image.
+      // ========================================================
+
+      console.log(
+        '[TOCODE] Preparing image for OCR...'
+      );
+
+
+      const metadata =
+        await sharp(
+          originalPath
+        ).metadata();
+
+
+      let width =
+        metadata.width || 1000;
+
+
+      // Enlarge smaller screenshots.
+      // This helps Tesseract recognize programming symbols.
+
+      if (width < 1800) {
+
+        width = 1800;
+
+      }
+
+
+      await sharp(
+        originalPath
+      )
+        .resize({
+          width,
+          withoutEnlargement: false
+        })
+
+        // Convert to grayscale
+
+        .grayscale()
+
+        // Increase contrast
+
+        .normalize()
+
+        // Slight sharpening
+
+        .sharpen()
+
+        // PNG keeps text quality
+
+        .png()
+
+        .toFile(
+          processedPath
+        );
+
+
+      // ========================================================
       // OCR
-      // --------------------------------------------------------
+      // ========================================================
 
       console.log(
         '[TOCODE] Starting local OCR...'
       );
 
+
       const result =
         await Tesseract.recognize(
-          filePath,
+          processedPath,
           'eng',
           {
+
             logger: info => {
 
               if (
-                info.status === 'recognizing text'
+                info.status ===
+                'recognizing text'
               ) {
 
                 console.log(
-                  `[TOCODE] OCR ${Math.round(
+                  `[TOCODE] OCR: ${Math.round(
                     info.progress * 100
                   )}%`
                 );
@@ -147,18 +261,24 @@ module.exports = {
               }
 
             }
+
           }
         );
 
-      // --------------------------------------------------------
-      // GET TEXT
-      // --------------------------------------------------------
+
+      // ========================================================
+      // GET OCR TEXT
+      // ========================================================
 
       let code =
         result?.data?.text || '';
 
+
       code =
-        code.trim();
+        code
+          .replace(/\r/g, '')
+          .trim();
+
 
       if (!code) {
 
@@ -166,131 +286,210 @@ module.exports = {
           jid,
           {
             text:
-              '❌ I could not detect readable text in that image.'
+              '❌ I could not detect code in that image.'
           },
-          { quoted: msg }
+          {
+            quoted: msg
+          }
         );
 
       }
 
-      // --------------------------------------------------------
-      // CLEAN OCR OUTPUT
-      // --------------------------------------------------------
+
+      // ========================================================
+      // CLEAN COMMON OCR ERRORS
+      //
+      // We only perform safe cleanup here.
+      // Aggressive replacements can destroy real code.
+      // ========================================================
 
       code =
         code
-          .replace(/\r/g, '')
-          .trim();
+          .replace(/[ \t]+$/gm, '')
+          .replace(/\n{4,}/g, '\n\n\n');
 
-      // --------------------------------------------------------
-      // DETECT CODE LANGUAGE
-      // --------------------------------------------------------
 
-      let language = 'text';
+      // ========================================================
+      // LANGUAGE DETECTION
+      // ========================================================
 
       const lower =
         code.toLowerCase();
 
+
+      let language =
+        'text';
+
+
+      // HTML
+
       if (
-        lower.includes('<!doctype html') ||
-        lower.includes('<html') ||
-        lower.includes('</html>')
+        /<!doctype\s+html/i.test(code) ||
+        /<html[\s>]/i.test(code) ||
+        /<\/html>/i.test(code) ||
+        /<head[\s>]/i.test(code) ||
+        /<body[\s>]/i.test(code)
       ) {
 
-        language = 'html';
+        language =
+          'html';
 
       }
+
+
+      // JavaScript
 
       else if (
-        lower.includes('function ') ||
-        lower.includes('const ') ||
-        lower.includes('let ') ||
-        lower.includes('=>') ||
-        lower.includes('require(')
+        /\b(const|let|var)\s+[A-Za-z_$]/.test(code) ||
+        /\bfunction\s+[A-Za-z_$]/.test(code) ||
+        /=>/.test(code) ||
+        /\brequire\s*\(/.test(code) ||
+        /\bconsole\.log\s*\(/.test(code)
       ) {
 
-        language = 'javascript';
+        language =
+          'javascript';
 
       }
+
+
+      // Python
 
       else if (
-        lower.includes('<?php')
+        /\bdef\s+[A-Za-z_]/.test(code) ||
+        /\bimport\s+[A-Za-z_]/.test(code) ||
+        /\bfrom\s+[A-Za-z_].*\s+import\s+/.test(code) ||
+        /\bprint\s*\(/.test(code)
       ) {
 
-        language = 'php';
+        language =
+          'python';
 
       }
+
+
+      // PHP
 
       else if (
-        lower.includes('import ') &&
-        lower.includes('def ')
+        /<\?php/i.test(code) ||
+        /\$\w+\s*=/.test(code)
       ) {
 
-        language = 'python';
+        language =
+          'php';
 
       }
+
+
+      // CSS
 
       else if (
-        lower.includes('{') &&
-        lower.includes('}') &&
-        (
-          lower.includes('color:') ||
-          lower.includes('display:') ||
-          lower.includes('margin:')
-        )
+        /\b(color|display|margin|padding|font-size|background)\s*:/.test(
+          lower
+        ) &&
+        /\{[\s\S]*\}/.test(code)
       ) {
 
-        language = 'css';
+        language =
+          'css';
 
       }
 
-      // --------------------------------------------------------
-      // SEND RESULT
-      // --------------------------------------------------------
 
-      const response =
-`💻 CODE DETECTED
+      // JSON
 
-\`\`\`${language}
+      else if (
+        /^[\s]*[\{\[]/.test(code) &&
+        /["'][A-Za-z0-9_-]+["']\s*:/.test(code)
+      ) {
+
+        language =
+          'json';
+
+      }
+
+
+      // ========================================================
+      // REMOVE EXCESSIVE EMPTY LINES
+      // ========================================================
+
+      code =
+        code
+          .split('\n')
+          .map(line =>
+            line.replace(/[ \t]+$/g, '')
+          )
+          .join('\n')
+          .trim();
+
+
+      // ========================================================
+      // WHATSAPP CODE MESSAGE
+      // ========================================================
+
+      const header =
+        `💻 CODE DETECTED\n\n`;
+
+
+      const footer =
+        `\n\nPowered by MUFASER-X`;
+
+
+      // ========================================================
+      // SPLIT VERY LARGE CODE
+      // ========================================================
+
+      const maxCodeLength =
+        45000;
+
+
+      if (
+        code.length <=
+        maxCodeLength
+      ) {
+
+        const response =
+`${header}\`\`\`${language}
 ${code}
-\`\`\`
+\`\`\`${footer}`;
 
-> Powered by MUFASER-X`;
 
-      // WhatsApp messages have practical size limits.
-      // Split very large OCR results.
-
-      const maxLength = 60000;
-
-      if (response.length <= maxLength) {
-
-        return await sock.sendMessage(
+        return sock.sendMessage(
           jid,
           {
-            text: response
+            text:
+              response
           },
-          { quoted: msg }
+          {
+            quoted: msg
+          }
         );
 
       }
 
-      // --------------------------------------------------------
+
+      // ========================================================
       // LARGE CODE
-      // --------------------------------------------------------
+      // ========================================================
 
       const parts = [];
+
 
       for (
         let i = 0;
         i < code.length;
-        i += 50000
+        i += maxCodeLength
       ) {
 
         parts.push(
-          code.slice(i, i + 50000)
+          code.slice(
+            i,
+            i + maxCodeLength
+          )
         );
 
       }
+
 
       for (
         let i = 0;
@@ -298,22 +497,37 @@ ${code}
         i++
       ) {
 
-        await sock.sendMessage(
-          jid,
-          {
-            text:
+        const response =
 `💻 CODE DETECTED — PART ${i + 1}/${parts.length}
 
 \`\`\`${language}
 ${parts[i]}
-\`\`\``
+\`\`\`
+
+> Powered by MUFASER-X`;
+
+
+        await sock.sendMessage(
+          jid,
+          {
+            text:
+              response
           },
-          { quoted: i === 0 ? msg : undefined }
+          {
+            quoted:
+              i === 0
+                ? msg
+                : undefined
+          }
         );
 
       }
 
     }
+
+    // ==========================================================
+    // ERROR
+    // ==========================================================
 
     catch (error) {
 
@@ -322,47 +536,72 @@ ${parts[i]}
         error
       );
 
-      await sock.sendMessage(
-        jid,
-        {
-          text:
-`❌ OCR failed.
+
+      try {
+
+        await sock.sendMessage(
+          jid,
+          {
+            text:
+`❌ TOCODE FAILED
 
 Reason:
 ${error.message}`
-        },
-        { quoted: msg }
-      );
+          },
+          {
+            quoted: msg
+          }
+        );
+
+      }
+
+      catch {}
 
     }
 
+
+    // ==========================================================
+    // CLEANUP
+    // ==========================================================
+
     finally {
 
-      // --------------------------------------------------------
-      // CLEAN TEMP FILE
-      // --------------------------------------------------------
-
       if (
-        filePath &&
-        fs.existsSync(filePath)
+        originalPath &&
+        fs.existsSync(
+          originalPath
+        )
       ) {
 
         try {
 
           fs.unlinkSync(
-            filePath
+            originalPath
           );
 
         }
 
-        catch (error) {
+        catch {}
 
-          console.error(
-            '[TOCODE CLEANUP ERROR]',
-            error
+      }
+
+
+      if (
+        processedPath &&
+        fs.existsSync(
+          processedPath
+        )
+      ) {
+
+        try {
+
+          fs.unlinkSync(
+            processedPath
           );
 
         }
+
+        catch {}
 
       }
 
