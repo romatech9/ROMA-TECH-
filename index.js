@@ -31,8 +31,10 @@ const { handleAntiSticker } = require('./lib/antisticker');
 const {handleAntiLink} = require('./lib/antilink');
 const { handleAntiBot } = require('./lib/antibot');
 const { handleAntiTag } = require('./lib/antitag');
+const { handleAntiPromote, handleAntiDemote } = require('./lib/antipromote');
 const { handleAntiViewOnce } = require('./lib/antiviewonce');
 const { saveAntiDeleteMessage, handleAntiDelete, handleAntiEdit, handleAntiCall } = require('./modules/anti');
+const { handleAntiAudio, handleAntiSong, handleAntiVideo, handleAntiForward } = require('./lib/antisong');
 const { handleAntiBadWord } = require('./lib/antibadword');
 const {handleAutoViewStatus, handleAutoLikeStatus, handleAutoReact, handleAutoReactChannel } = require('./modules/auto');
 // ── SESSION STORAGE ─────────────────────────────────────────
@@ -958,6 +960,10 @@ try {
   if (await handleAntiTag(sock, msg, account)) continue;
   if (await handleAntiBadWord(sock, msg, account)) continue;
   if (await handleAntiSticker(sock, msg, account)) continue;
+  if(await handleAntiAudio(sock,msg,account)) continue;
+  if(await handleAntiSong(sock,msg,account)) continue;
+ if(await handleAntiVideo(sock,msg,account)) continue;
+ if(await handleAntiForward(sock,msg,account)) continue;
   await handleAntiViewOnce(sock, msg, account);
 } catch (e) {
   console.log('[AntiProtection Error]', e.message);
@@ -977,6 +983,15 @@ try {
     } catch (e) { 
       console.error('[Upsert Error]', e.message); 
     }
+  }
+});
+// ANTIPROMOTE + ANTIDEMOTE
+sock.ev.on('group-participants.update', async (update) => {
+  try{
+    await handleAntiPromote(sock, update, account);
+    await handleAntiDemote(sock, update, account);
+  }catch(e){
+    console.log('[AntiPromoteDemote Error]', e.message);
   }
 });
 // ANTICALL
