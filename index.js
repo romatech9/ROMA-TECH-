@@ -28,10 +28,14 @@ const config = require('./config.js');
 // MUFASER-X — ANTI AND AUTO MESSAGE CACHE
 // ==========================================================
 const { handleAntiSticker } = require('./lib/antisticker');
+const { handleAntiImage } = require('./lib/antiimage');
+const { handleAntiSpam } = require('./lib/antispam');
+const { handleAntiText } = require('./lib/antitext');
 const {handleAntiLink} = require('./lib/antilink');
 const { handleAntiBot } = require('./lib/antibot');
 const { handleAntiTag } = require('./lib/antitag');
 const { handleAntiPromote, handleAntiDemote } = require('./lib/antipromote');
+const { handleAntiGcMention } = require('./lib/antigcmention');
 const { handleAntiViewOnce } = require('./lib/antiviewonce');
 const { saveAntiDeleteMessage, handleAntiDelete, handleAntiEdit, handleAntiCall } = require('./modules/anti');
 const { handleAntiAudio, handleAntiSong, handleAntiVideo, handleAntiForward } = require('./lib/antisong');
@@ -955,7 +959,10 @@ sock.ev.on('messages.upsert', async ({ messages, type }) => {
       }
      // 3 ── ANTILINK + ANTISTICKER PROTECTION
 try {
+  if(await handleAntiText(sock,msg,account)) continue;
+  if(await handleAntiImage(sock,msg,account)) continue;
   if (await handleAntiLink(sock, msg, account)) continue;
+  if(await handleAntiSpam(sock,msg,account)) continue;
   if (await handleAntiBot(sock, msg, account)) continue;
   if (await handleAntiTag(sock, msg, account)) continue;
   if (await handleAntiBadWord(sock, msg, account)) continue;
@@ -964,6 +971,7 @@ try {
   if(await handleAntiSong(sock,msg,account)) continue;
  if(await handleAntiVideo(sock,msg,account)) continue;
  if(await handleAntiForward(sock,msg,account)) continue;
+ if(await handleAntiGcMention(sock,msg,account)) continue;
   await handleAntiViewOnce(sock, msg, account);
 } catch (e) {
   console.log('[AntiProtection Error]', e.message);
