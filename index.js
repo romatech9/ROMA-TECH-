@@ -395,7 +395,7 @@ autotyping: false,
 // ── AUTO RECORDING 
 autorecord: false,
 // ── ANTIDELETE
-antidelete: { dm: true, group: true, private: false }, 
+antidelete: { dm: true, group: false, private: true },
 antidm: false,
 // ── AUTO VIEW STATUS
 autoviewstatus: false,
