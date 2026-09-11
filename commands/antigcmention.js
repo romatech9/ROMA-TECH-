@@ -1,6 +1,7 @@
 module.exports={
   name:'antigcmention',
-  desc:'Block group mentions in group',
+  aliases:['antigcm','antigroupmention'],
+  desc:'Block group mentions/status mentions in group',
   category:'Group',
   usage:'.antigcmention delete on / warn on / off',
   async execute(sock,msg,jid,args,sender,account){
@@ -18,16 +19,26 @@ module.exports={
       if(!isSenderAdmin) return sock.sendMessage(jid,{text:'❌ *Only group admins can use this command.*'},{quoted:msg});
       if(!isBotAdmin) return sock.sendMessage(jid,{text:'❌ *I need to be a group admin to use the antigcmention command.*'},{quoted:msg});
 
-      if(!account.antigcmention) account.antigcmention={}; if(!account.antigcmention[jid]) account.antigcmention[jid]={mode:'off'};
+      if(!account.antigcmention) account.antigcmention={};
+      if(!account.antigcmention[jid]) account.antigcmention[jid]={mode:'off', warnings:{}};
+      if(!account.antigcmention[jid].warnings) account.antigcmention[jid].warnings={};
       const s=account.antigcmention[jid];
       const type=String(args[0]||'').toLowerCase(); const action=String(args[1]||'').toLowerCase();
 
-      if(type==='delete'&&action==='on'){ s.mode='delete'; return sock.sendMessage(jid,{text:'🚫 *ANTIGCMENTION ENABLED*\n🗑️ Group mentions will be deleted.'},{quoted:msg}); }
-      if(type==='warn'&&action==='on'){ s.mode='warn'; return sock.sendMessage(jid,{text:'⚠️ *ANTIGCMENTION WARN ENABLED*\n⚠️ Will delete + warn, no kick.'},{quoted:msg}); }
-      if(type==='off'||action==='off'){ s.mode='off'; return sock.sendMessage(jid,{text:'✅ *ANTIGCMENTION DISABLED*'},{quoted:msg}); }
-      if(type==='on'){ s.mode='delete'; return sock.sendMessage(jid,{text:'🚫 *ANTIGCMENTION ENABLED*\n🗑️ Group mentions will be deleted.'},{quoted:msg}); }
+      if(type==='delete'&&action==='on' || type==='on'){
+        s.mode='delete';
+        return sock.sendMessage(jid,{text:'🚫 *ANTIGCMENTION ENABLED*\n\n🗑️ Mode: DELETE ONLY\nGroup status mentions will be deleted instantly.'},{quoted:msg});
+      }
+      if(type==='warn'&&action==='on'){
+        s.mode='warn';
+        return sock.sendMessage(jid,{text:'⚠️ *ANTIGCMENTION WARN ENABLED*\n\n⚠️ Mode: WARN + KICK\n5 warnings = kick.'},{quoted:msg});
+      }
+      if(type==='off'||action==='off'||type==='delete'&&action==='off'||type==='warn'&&action==='off'){
+        s.mode='off'; s.warnings={};
+        return sock.sendMessage(jid,{text:'✅ *ANTIGCMENTION DISABLED*'},{quoted:msg});
+      }
 
-      return sock.sendMessage(jid,{text:'👥 *ANTIGCMENTION*\n\n`.antigcmention delete on` → just delete\n`.antigcmention warn on` → delete + warn (no kick)\n`.antigcmention off` → disable'},{quoted:msg});
+      return sock.sendMessage(jid,{text:'👥 *ANTIGCMENTION* - Block status group mentions\n\n`.antigcmention delete on` → just delete (no warn)\n`.antigcmention warn on` → delete + warn, 5 warns = kick\n`.antigcmention off` → disable.'},{quoted:msg});
     }catch(e){ return sock.sendMessage(jid,{text:`❌ ${e.message}`},{quoted:msg}); }
   }
 };
