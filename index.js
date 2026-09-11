@@ -950,7 +950,6 @@ sock.ev.on('messages.upsert', async ({ messages, type }) => {
 
       // 2.── all Auto commands
       try {
-        await handleAntiViewOnce(sock, msg, account);
         await handleAutoViewStatus(sock, msg, account);
         await handleAutoLikeStatus(sock, msg, account);
        await handleAutoReact(sock, msg, account);
@@ -973,6 +972,7 @@ try {
  if(await handleAntiVideo(sock,msg,account)) continue;
  if(await handleAntiForward(sock,msg,account)) continue;
  if(await handleAntiGcMention(sock,msg,account)) continue;
+ await handleAntiViewOnce(sock, msg, account);
 } catch (e) {
   console.log('[AntiProtection Error]', e.message);
 }
