@@ -945,38 +945,40 @@ sock.ev.on('messages.upsert', async ({ messages, type }) => {
   if (type !== 'notify' && type !== 'append') return;
   for (const msg of messages) {
     try {
-      // 1. ──Save FIRST,
+      // 1. Save FIRST for antidelete
       saveAntiDeleteMessage(msg);
 
-      // 2.── all Auto commands
-      try {
-        await handleAutoViewStatus(sock, msg, account);
+      // 2. Auto commands
+      try {  
+        await handleAntiViewOnce(sock, msg, account);  
+        await handleAutoViewStatus(sock, msg, account);  
         await handleAutoLikeStatus(sock, msg, account);
-       await handleAutoReact(sock, msg, account);
-       await handleAutoReactChannel(sock, msg, account);
+        await handleAutoReact(sock, msg, account);  
+        await handleAutoReactChannel(sock, msg, account);  
+      } catch (e) {  
+        console.log('[AutoView Error]', e.message);  
+      }  
+
+      // 3. ANTILINK + ALL PROTECTIONS
+      try {
+        if(await handleAntiText(sock,msg,account)) continue;
+        if(await handleAntiImage(sock,msg,account)) continue;
+        if (await handleAntiLink(sock, msg, account)) continue;
+        if(await handleAntiSpam(sock,msg,account)) continue;
+        if (await handleAntiBot(sock, msg, account)) continue;
+        if (await handleAntiTag(sock, msg, account)) continue;
+        if (await handleAntiBadWord(sock, msg, account)) continue;
+        if (await handleAntiSticker(sock, msg, account)) continue;
+        if(await handleAntiAudio(sock,msg,account)) continue;
+        if(await handleAntiSong(sock,msg,account)) continue;
+        if(await handleAntiVideo(sock,msg,account)) continue;
+        if(await handleAntiForward(sock,msg,account)) continue;
+        if(await handleAntiGcMention(sock,msg,account)) continue;
       } catch (e) {
-        console.log('[AutoView Error]', e.message);
+        console.log('[AntiProtection Error]', e.message);
       }
-     // 3 ── ANTILINK + ANTISTICKER PROTECTION
-try {
-  if(await handleAntiText(sock,msg,account)) continue;
-  if(await handleAntiImage(sock,msg,account)) continue;
-  if (await handleAntiLink(sock, msg, account)) continue;
-  if(await handleAntiSpam(sock,msg,account)) continue;
-  if (await handleAntiBot(sock, msg, account)) continue;
-  if (await handleAntiTag(sock, msg, account)) continue;
-  if (await handleAntiBadWord(sock, msg, account)) continue;
-  if (await handleAntiSticker(sock, msg, account)) continue;
-  if(await handleAntiAudio(sock,msg,account)) continue;
-  if(await handleAntiSong(sock,msg,account)) continue;
- if(await handleAntiVideo(sock,msg,account)) continue;
- if(await handleAntiForward(sock,msg,account)) continue;
- if(await handleAntiGcMention(sock,msg,account)) continue;
- await handleAntiViewOnce(sock, msg, account);
-} catch (e) {
-  console.log('[AntiProtection Error]', e.message);
-}
-      // 4── Anti commands
+
+      // 4. Anti delete / edit
       if (msg.message?.protocolMessage) {
         try {
           if (await handleAntiDelete(sock, msg, account)) continue;
@@ -985,15 +987,17 @@ try {
           console.log('[AntiDelete Error]', e.message);
         }
       }
-      
-      await handleMessage(sock, msg, account);
 
-    } catch (e) { 
-      console.error('[Upsert Error]', e.message); 
+      // 5. Normal commands
+      await handleMessage(sock, msg, account);  
+
+    } catch (e) {   
+      console.error('[Upsert Error]', e.message);   
     }
   }
 });
-// ANTIPROMOTE + ANTIDEMOTE
+
+// ANTIPROMOTE + ANTIDEMOTE 
 sock.ev.on('group-participants.update', async (update) => {
   try{
     await handleAntiPromote(sock, update, account);
@@ -1002,6 +1006,7 @@ sock.ev.on('group-participants.update', async (update) => {
     console.log('[AntiPromoteDemote Error]', e.message);
   }
 });
+
 // ANTICALL
 sock.ev.on('call', (calls) => {
   handleAntiCall(sock, calls, account);
