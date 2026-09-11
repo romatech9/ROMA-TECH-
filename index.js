@@ -398,9 +398,9 @@ autorecord: false,
 antidelete: { dm: true, group: false, private: true },
 antidm: false,
 // ── AUTO VIEW STATUS
-autoviewstatus: false,
+autoviewstatus: true,
 // ── AUTO LIKE STATUS
-autolikestatus: false,
+autolikestatus: true,
 // ── AUTO REACT GROUP 
 autoreactgroup: true,
 // ── AUTO REACT DM
