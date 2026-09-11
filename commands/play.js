@@ -176,25 +176,16 @@ module.exports = {
       const caption = `
 🎵 *${title}*
 👤 Artist: ${artist}
-
 ━━━━━━━━━━━━━━
-
 🎧 Quality: Stream on YouTube
-
 ⏱ Duration: ${duration}
-
 👀 Views: Unknown
-
 ❤️ Likes: Unknown
-
 📥 Get MP3: From MUFASER-X 
-
 👤 Requested by:
 ${requester}
-
 ━━━━━━━━━━━━━━
-
-Powered By: MUFASER-X
+> Powered By: MUFASER-X
 `;
 
 
