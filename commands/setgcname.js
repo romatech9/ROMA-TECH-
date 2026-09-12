@@ -4,388 +4,69 @@
 
 module.exports = {
   name: 'setgcname',
-
-  aliases: [
-    'setname',
-    'setgname',
-    'gname'
-  ],
-
+  aliases: ['setname', 'setgname', 'gname'],
   desc: 'Set group name',
-
   category: 'Group',
-
   usage: '.setgcname New Group Name',
 
-  async execute(
-    sock,
-    msg,
-    jid,
-    args,
-    sender,
-    account
-  ) {
+  async execute(sock, msg, jid, args, sender, account) {
 
-    // ========================================================
-    // CHECK GROUP
-    // ========================================================
-
-    const isGroup =
-      typeof jid === 'string' &&
-      jid.endsWith('@g.us');
-
+    const isGroup = typeof jid === 'string' && jid.endsWith('@g.us');
     if (!isGroup) {
-      return await sock.sendMessage(
-        jid,
-        {
-          text:
-            '❌ *This command only works in groups.*'
-        },
-        {
-          quoted: msg
-        }
-      );
+      return await sock.sendMessage(jid, { text: '❌ *This command only works in groups.*' }, { quoted: msg });
     }
 
     try {
+      const metadata = await sock.groupMetadata(jid);
+      const participants = metadata?.participants || [];
 
-      // ======================================================
-      // GET GROUP METADATA
-      // ======================================================
-
-      const metadata =
-        await sock.groupMetadata(jid);
-
-      if (!metadata) {
-        throw new Error(
-          'Group metadata unavailable.'
-        );
-      }
-
-      const participants =
-        metadata?.participants || [];
-
-      // ======================================================
-      // ADMIN HELPERS
-      // SAME METHOD USED BY WORKING .MUTE
-      // ======================================================
-
-      const cleanJid = (value) => {
-        if (!value) return '';
-
-        return String(value)
-          .trim()
-          .toLowerCase();
-      };
-
-      const getNumber = (value) => {
-        if (!value) return '';
-
-        return String(value)
-          .split('@')[0]
-          .split(':')[0]
-          .replace(/\D/g, '');
-      };
-
-      const participantMatches = (
-        participant,
-        targetJid,
-        targetNumber
-      ) => {
-
-        if (!participant) return false;
-
-        const participantId =
-          cleanJid(participant.id);
-
-        const target =
-          cleanJid(targetJid);
-
-        // Exact JID
-        if (
-          participantId &&
-          target &&
-          participantId === target
-        ) {
-          return true;
-        }
-
-        // Base number
-        const participantNumber =
-          getNumber(participant.id);
-
-        if (
-          targetNumber &&
-          participantNumber &&
-          participantNumber === targetNumber
-        ) {
-          return true;
-        }
-
-        // phoneNumber fallback
-        const participantPhone =
-          getNumber(
-            participant.phoneNumber
-          );
-
-        if (
-          targetNumber &&
-          participantPhone &&
-          participantPhone === targetNumber
-        ) {
-          return true;
-        }
-
+      const cleanJid = (v) => v? String(v).trim().toLowerCase() : '';
+      const getNumber = (v) => v? String(v).split('@')[0].split(':')[0].replace(/\D/g, '') : '';
+      const participantMatches = (p, tJid, tNum) => {
+        if (!p) return false;
+        if (cleanJid(p.id) === cleanJid(tJid)) return true;
+        if (tNum && getNumber(p.id) === tNum) return true;
+        if (tNum && getNumber(p.phoneNumber) === tNum) return true;
         return false;
       };
 
-      // ======================================================
-      // FIND BOT
-      // ======================================================
-
-      const botJid =
-        sock?.user?.id || '';
-
-      const botNumber =
-        getNumber(botJid);
-
-      const botParticipant =
-        participants.find(
-          participant =>
-            participantMatches(
-              participant,
-              botJid,
-              botNumber
-            )
-        );
-
-      const isBotAdmin =
-        botParticipant?.admin === 'admin' ||
-        botParticipant?.admin === 'superadmin';
-
-      console.log(
-        '[SetGCName] 🤖 Bot:',
-        {
-          botJid,
-          botNumber,
-          found:
-            botParticipant?.id || null,
-          admin:
-            botParticipant?.admin || null,
-          isBotAdmin
-        }
-      );
-
-      // ======================================================
-      // CHECK BOT ADMIN
-      // ======================================================
-
+      const botJid = sock?.user?.id || '';
+      const botNumber = getNumber(botJid);
+      const botParticipant = participants.find(p => participantMatches(p, botJid, botNumber));
+      const isBotAdmin = botParticipant?.admin === 'admin' || botParticipant?.admin === 'superadmin';
       if (!isBotAdmin) {
-
-        return await sock.sendMessage(
-          jid,
-          {
-            text:
-              '❌ *I need to be a group admin to change the group name.*'
-          },
-          {
-            quoted: msg
-          }
-        );
+        return await sock.sendMessage(jid, { text: '❌ *I need to be a group admin to change the group name.*' }, { quoted: msg });
       }
 
-      // ======================================================
-      // FIND COMMAND SENDER
-      // ======================================================
-
-      const senderJid =
-        msg?.key?.participant ||
-        sender?.jid ||
-        msg?.participant ||
-        (
-          msg?.key?.fromMe
-            ? botJid
-            : ''
-        );
-
-      const senderNumber =
-        getNumber(
-          sender?.number ||
-          senderJid
-        );
-
-      // ======================================================
-      // FIND SENDER PARTICIPANT
-      // ======================================================
-
-      let senderParticipant =
-        participants.find(
-          participant =>
-            participantMatches(
-              participant,
-              senderJid,
-              senderNumber
-            )
-        );
-
-      // ======================================================
-      // FROM-ME FALLBACK
-      // ======================================================
-
-      if (
-        !senderParticipant &&
-        msg?.key?.fromMe === true
-      ) {
-
-        senderParticipant =
-          participants.find(
-            participant =>
-              participantMatches(
-                participant,
-                botJid,
-                botNumber
-              )
-          );
-      }
-
-      // ======================================================
-      // CHECK SENDER ADMIN
-      // ======================================================
-
-      const isAdmin =
-        msg?.key?.fromMe === true ||
-        senderParticipant?.admin === 'admin' ||
-        senderParticipant?.admin === 'superadmin';
-
-      console.log(
-        '[SetGCName] 👤 Sender:',
-        {
-          senderJid,
-          senderNumber,
-          found:
-            senderParticipant?.id || null,
-          admin:
-            senderParticipant?.admin || null,
-          isAdmin
-        }
-      );
-
+      const senderJid = msg?.key?.participant || sender?.jid || msg?.participant || (msg?.key?.fromMe? botJid : '');
+      const senderNumber = getNumber(sender?.number || senderJid);
+      let senderParticipant = participants.find(p => participantMatches(p, senderJid, senderNumber));
+      if (!senderParticipant && msg?.key?.fromMe === true) senderParticipant = botParticipant;
+      const isAdmin = msg?.key?.fromMe === true || senderParticipant?.admin === 'admin' || senderParticipant?.admin === 'superadmin';
       if (!isAdmin) {
-
-        return await sock.sendMessage(
-          jid,
-          {
-            text:
-              '❌ *Only group admins can use this command.*'
-          },
-          {
-            quoted: msg
-          }
-        );
+        return await sock.sendMessage(jid, { text: '❌ *Only group admins can use this command.*' }, { quoted: msg });
       }
 
-      // ======================================================
-      // GET GROUP NAME
-      // ======================================================
-
-      const text =
-        Array.isArray(args)
-          ? args.join(' ').trim()
-          : '';
-
-      if (!text) {
-
-        return await sock.sendMessage(
-          jid,
-          {
-            text:
-              '❌ *Please provide a group name.*\n\n' +
-              'Example:\n' +
-              '`.setgcname MUFASER-X OFFICIAL`'
-          },
-          {
-            quoted: msg
-          }
-        );
+      const name = Array.isArray(args)? args.join(' ').trim() : '';
+      if (!name) {
+        return await sock.sendMessage(jid, { text: '❌ *Please provide a group name.*\n\nExample:\n`.setgcname MUFASER-X OFFICIAL`' }, { quoted: msg });
+      }
+      if (name.length > 100) {
+        return await sock.sendMessage(jid, { text: '❌ *Group name too long.*\n\nMaximum: *100 characters*.' }, { quoted: msg });
       }
 
-      // ======================================================
-      // NAME LENGTH
-      // ======================================================
+      await sock.groupUpdateSubject(jid, name);
 
-      if (text.length > 100) {
+      const senderMention = senderJid || botJid;
 
-        return await sock.sendMessage(
-          jid,
-          {
-            text:
-              '❌ *Group name too long.*\n\n' +
-              'Maximum: *100 characters*.'
-          },
-          {
-            quoted: msg
-          }
-        );
-      }
-
-      // ======================================================
-      // UPDATE GROUP NAME
-      // ======================================================
-
-      await sock.groupUpdateSubject(
-        jid,
-        text
-      );
-
-      // ======================================================
-      // SUCCESS
-      // ======================================================
-
-      const senderMention =
-        senderJid ||
-        botJid;
-
-      const senderDisplay =
-        getNumber(senderMention) ||
-        'Admin';
-
-      return await sock.sendMessage(
-        jid,
-        {
-          text:
-            `✅ *GROUP NAME UPDATED!*` 
-            
-          mentions:
-            senderMention
-              ? [senderMention]
-              : []
-        },
-        {
-          quoted: msg
-        }
+      return await sock.sendMessage(jid, {
+          text: `✅ *GROUP NAME UPDATED!*\n\n📛 *New Name:* ${name}`,
+          mentions: senderMention? [senderMention] : []
+        }, { quoted: msg }
       );
 
     } catch (error) {
-
-      console.error(
-        '[SetGCName] ❌ Failed:',
-        error
-      );
-
-      return await sock.sendMessage(
-        jid,
-        {
-          text:
-            '❌ *Failed to update group name.*\n\n' +
-            `⚠️ *Reason:* ${
-              error?.message ||
-              'WhatsApp rejected the request.'
-            }`
-        },
-        {
-          quoted: msg
-        }
-      );
+      return await sock.sendMessage(jid, { text: `❌ *Failed to update group name.*\n\n⚠️ *Reason:* ${error?.message || 'WhatsApp rejected the request.'}` }, { quoted: msg });
     }
   }
 };
