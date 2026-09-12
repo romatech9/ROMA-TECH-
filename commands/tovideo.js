@@ -854,8 +854,7 @@ module.exports = {
             'MUFASER-X.mp4',
 
           caption:
-            '✅ *Converted to Video*\n\n' +
-            '> 🎉*╔POWERED BY MUFASER-X╗*🌹'
+            '> ✅ powered; by MUFASER-X'
         },
         {
           quoted: msg

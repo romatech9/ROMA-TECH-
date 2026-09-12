@@ -52,7 +52,7 @@ module.exports = {
       // ======================================================
       await sock.sendMessage(jid, {
         image: buffer,
-        caption: `✅ *Converted to Image*\n\n> 🎉*╔POWERED BY MUFASER-X╗*🌹`
+        caption: `> ✅ powered; by MUFASER-X`
       }, { quoted: msg });
 
     } catch (error) {
