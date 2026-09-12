@@ -1,19 +1,20 @@
 // ============================================================
-// MUFASER-X — ADD MEMBER
+// MUFASER-X — DEMOTE MEMBER
 // ============================================================
 
 module.exports = {
-  name: 'add',
+  name: 'demote',
 
   aliases: [
-    'invite'
+    'removeadmin',
+    'unadmin'
   ],
 
-  desc: 'Add a member to the group by number',
+  desc: 'Demote an admin to member',
 
   category: 'Group',
 
-  usage: '.add 2567xxxxxxxxx',
+  usage: '.demote @tag or reply',
 
   async execute(
     sock,
@@ -33,10 +34,12 @@ module.exports = {
       jid.endsWith('@g.us');
 
     if (!isGroup) {
+
       return await sock.sendMessage(
         jid,
         {
-          text: '❌ *This command only works in groups.*'
+          text:
+            '❌ *This command only works in groups.*'
         },
         {
           quoted: msg
@@ -54,40 +57,37 @@ module.exports = {
         await sock.groupMetadata(jid);
 
       if (!metadata) {
-        throw new Error('Group metadata unavailable.');
+        throw new Error(
+          'Group metadata unavailable.'
+        );
       }
 
       const participants =
-        metadata.participants || [];
+        metadata?.participants || [];
 
       // ======================================================
-      // HELPER — NORMALIZE JID
+      // ADMIN HELPERS
+      // SAME METHOD USED BY WORKING .MUTE
       // ======================================================
 
       const cleanJid = (value) => {
+
         if (!value) return '';
 
         return String(value)
-         .trim()
-         .toLowerCase();
+          .trim()
+          .toLowerCase();
       };
-
-      // ======================================================
-      // HELPER — GET BASE NUMBER
-      // ======================================================
 
       const getNumber = (value) => {
+
         if (!value) return '';
 
         return String(value)
-         .split('@')[0]
-         .split(':')[0]
-         .replace(/\D/g, '');
+          .split('@')[0]
+          .split(':')[0]
+          .replace(/\D/g, '');
       };
-
-      // ======================================================
-      // HELPER — CHECK PARTICIPANT MATCH
-      // ======================================================
 
       const participantMatches = (
         participant,
@@ -103,6 +103,7 @@ module.exports = {
         const target =
           cleanJid(targetJid);
 
+        // Exact JID
         if (
           participantId &&
           target &&
@@ -111,6 +112,7 @@ module.exports = {
           return true;
         }
 
+        // Base number
         const participantNumber =
           getNumber(participant.id);
 
@@ -122,6 +124,7 @@ module.exports = {
           return true;
         }
 
+        // phoneNumber fallback
         const participantPhone =
           getNumber(
             participant.phoneNumber
@@ -139,7 +142,62 @@ module.exports = {
       };
 
       // ======================================================
-      // GET SENDER JID
+      // FIND BOT
+      // ======================================================
+
+      const botJid =
+        sock?.user?.id || '';
+
+      const botNumber =
+        getNumber(botJid);
+
+      const botParticipant =
+        participants.find(
+          participant =>
+            participantMatches(
+              participant,
+              botJid,
+              botNumber
+            )
+        );
+
+      const isBotAdmin =
+        botParticipant?.admin === 'admin' ||
+        botParticipant?.admin === 'superadmin';
+
+      console.log(
+        '[Demote] 🤖 Bot:',
+        {
+          botJid,
+          botNumber,
+          found:
+            botParticipant?.id || null,
+          admin:
+            botParticipant?.admin || null,
+          isBotAdmin
+        }
+      );
+
+      // ======================================================
+      // BOT ADMIN CHECK
+      // ======================================================
+
+      if (!isBotAdmin) {
+
+        return await sock.sendMessage(
+          jid,
+          {
+            text:
+              '❌ *I need to be a group admin to demote members.*'
+          },
+          {
+            quoted: msg
+          }
+        );
+      }
+
+      // ======================================================
+      // FIND COMMAND SENDER
       // ======================================================
 
       const senderJid =
@@ -148,7 +206,7 @@ module.exports = {
         msg?.participant ||
         (
           msg?.key?.fromMe
-           ? sock?.user?.id
+            ? botJid
             : ''
         );
 
@@ -173,19 +231,13 @@ module.exports = {
         );
 
       // ======================================================
-      // EXTRA FALLBACK FOR FROM-ME
+      // FROM-ME FALLBACK
       // ======================================================
 
       if (
-       !senderParticipant &&
+        !senderParticipant &&
         msg?.key?.fromMe === true
       ) {
-
-        const botJid =
-          sock?.user?.id || '';
-
-        const botNumber =
-          getNumber(botJid);
 
         senderParticipant =
           participants.find(
@@ -199,7 +251,7 @@ module.exports = {
       }
 
       // ======================================================
-      // CHECK USER ADMIN
+      // CHECK SENDER ADMIN
       // ======================================================
 
       const isAdmin =
@@ -208,12 +260,14 @@ module.exports = {
         senderParticipant?.admin === 'superadmin';
 
       console.log(
-        `[Add] 👤 Sender:`,
+        '[Demote] 👤 Sender:',
         {
           senderJid,
           senderNumber,
-          found: senderParticipant?.id || null,
-          admin: senderParticipant?.admin || null,
+          found:
+            senderParticipant?.id || null,
+          admin:
+            senderParticipant?.admin || null,
           isAdmin
         }
       );
@@ -233,77 +287,66 @@ module.exports = {
       }
 
       // ======================================================
-      // FIND BOT PARTICIPANT
+      // GET TARGET USERS
       // ======================================================
 
-      const botJid =
-        sock?.user?.id || '';
+      let users = [];
 
-      const botNumber =
-        getNumber(botJid);
+      const contextInfo =
+        msg?.message
+          ?.extendedTextMessage
+          ?.contextInfo;
 
-      const botParticipant =
-        participants.find(
-          participant =>
-            participantMatches(
-              participant,
-              botJid,
-              botNumber
-            )
+      // ------------------------------------------------------
+      // MENTIONED USERS
+      // ------------------------------------------------------
+
+      if (
+        Array.isArray(
+          contextInfo?.mentionedJid
+        )
+      ) {
+
+        users.push(
+          ...contextInfo.mentionedJid
         );
+      }
 
-      // ======================================================
-      // CHECK BOT ADMIN
-      // ======================================================
+      // ------------------------------------------------------
+      // REPLIED USER
+      // ------------------------------------------------------
 
-      const isBotAdmin =
-        botParticipant?.admin === 'admin' ||
-        botParticipant?.admin === 'superadmin';
+      if (contextInfo?.participant) {
 
-      console.log(
-        `[Add] 🤖 Bot:`,
-        {
-          botJid,
-          botNumber,
-          found: botParticipant?.id || null,
-          admin: botParticipant?.admin || null,
-          isBotAdmin
-        }
-      );
-
-      if (!isBotAdmin) {
-
-        return await sock.sendMessage(
-          jid,
-          {
-            text:
-              '❌ *I need to be a group admin to add members.*'
-          },
-          {
-            quoted: msg
-          }
+        users.push(
+          contextInfo.participant
         );
       }
 
       // ======================================================
-      // GET NUMBER
+      // REMOVE DUPLICATES
       // ======================================================
 
-      const number =
-        String(args?.[0] || '')
-         .replace(/\D/g, '');
+      users = [
+        ...new Set(
+          users.filter(Boolean)
+        )
+      ];
 
-      if (!number) {
+      // ======================================================
+      // NO TARGET
+      // ======================================================
+
+      if (users.length === 0) {
 
         return await sock.sendMessage(
           jid,
           {
             text:
-              '❌ *Phone number is required.*\n\n' +
+              '❌ *No member selected.*\n\n' +
               '*Usage:*\n' +
-              '`.add 2567xxxxxxxxx`\n\n' +
-              '*Example:*\n' +
-              '`.add 256700000000`'
+              '`.demote @tag`\n' +
+              'or reply to an admin.'
           },
           {
             quoted: msg
@@ -312,114 +355,36 @@ module.exports = {
       }
 
       // ======================================================
-      // BASIC VALIDATION
+      // PROTECT BOT + SENDER
       // ======================================================
 
-      if (number.length < 8) {
+      const protectedNumbers =
+        new Set([
+          botNumber,
+          senderNumber
+        ]);
 
-        return await sock.sendMessage(
-          jid,
-          {
-            text:
-              '❌ *Invalid phone number.*\n\n' +
-              'Use international format without `+` or spaces.\n\n' +
-              '*Example:* `256700000000`'
-          },
-          {
-            quoted: msg
-          }
-        );
-      }
-
-      const memberJid =
-        `${number}@s.whatsapp.net`;
-
-      // ======================================================
-      // CHECK IF ALREADY IN GROUP
-      // ======================================================
-
-      const alreadyMember =
-        participants.some(
-          participant =>
-            participantMatches(
-              participant,
-              memberJid,
-              number
+      const removableUsers =
+        users.filter(
+          user =>
+            !protectedNumbers.has(
+              getNumber(user)
             )
         );
 
-      if (alreadyMember) {
-
-        return await sock.sendMessage(
-          jid,
-          {
-            text:
-              `ℹ️ *@${number} is already a member of this group.*`,
-            mentions: [
-              memberJid
-            ]
-          },
-          {
-            quoted: msg
-          }
-        );
-      }
-
       // ======================================================
-      // ADD MEMBER
-      // ======================================================
-
-      const result =
-        await sock.groupParticipantsUpdate(
-          jid,
-          [memberJid],
-          'add'
-        );
-
-      console.log(
-        '[Add] 📥 WhatsApp response:',
-        result
-      );
-
-      const response =
-        Array.isArray(result)
-         ? result[0]
-          : result;
-
-      const status =
-        String(response?.status || '');
-
-      // ======================================================
-      // SUCCESS - FIXED RESPONSE
+      // NOTHING TO DEMOTE
       // ======================================================
 
       if (
-        status === '200' ||
-        status === '201'
+        removableUsers.length === 0
       ) {
-
-        const addedBy =
-          senderJid ||
-          sock?.user?.id ||
-          '';
-
-        const addedByNumber =
-          getNumber(addedBy);
-
-        const mentions = [
-          memberJid
-        ];
-
-        if (addedBy) {
-          mentions.push(addedBy);
-        }
 
         return await sock.sendMessage(
           jid,
           {
             text:
-              `✅ *MEMBER ADDED SUCCESSFULLY!`             `👤 *Member:* @${number}\n`,
-            mentions
+              '❌ *Cannot demote the bot or yourself.*'
           },
           {
             quoted: msg
@@ -428,32 +393,30 @@ module.exports = {
       }
 
       // ======================================================
-      // FAILED
+      // DEMOTE MEMBERS
       // ======================================================
 
-      let reason =
-        'WhatsApp rejected the request.';
+      await sock.groupParticipantsUpdate(
+        jid,
+        removableUsers,
+        'demote'
+      );
 
-      if (status === '403') {
-        reason =
-          'The user may have privacy restrictions preventing group additions.';
-      } else if (status === '409') {
-        reason =
-          'The user is already in the group or WhatsApp could not add them.';
-      } else if (status) {
-        reason =
-          `WhatsApp returned status ${status}.`;
-      }
+      // ======================================================
+      // SUCCESS MESSAGE
+      // ======================================================
+  let text =
+        `📉 *DEMOTED ${removableUsers.length} ADMIN(S)*`
 
       return await sock.sendMessage(
         jid,
         {
-          text:
-            `❌ *FAILED TO ADD @${number}*\n\n` +
-            `⚠️ ${reason}`,
+          text,
+
           mentions: [
-            memberJid
-          ]
+            ...removableUsers,
+            senderJid
+          ].filter(Boolean)
         },
         {
           quoted: msg
@@ -463,34 +426,19 @@ module.exports = {
     } catch (error) {
 
       console.error(
-        '[Add] ❌ Error:',
+        '[Demote] ❌ Failed:',
         error
       );
-
-      const number =
-        String(args?.[0] || '')
-         .replace(/\D/g, '');
 
       return await sock.sendMessage(
         jid,
         {
           text:
-            `❌ *Failed to add ${
-              number
-               ? `@${number}`
-                : 'member'
-            }.*\n\n` +
+            '❌ *Failed to demote member.*\n\n' +
             `⚠️ *Reason:* ${
               error?.message ||
-              'Check the number format and try again.'
-            }`,
-         ...(number
-           ? {
-                mentions: [
-                  `${number}@s.whatsapp.net`
-                ]
-              }
-            : {})
+              'WhatsApp rejected the request.'
+            }`
         },
         {
           quoted: msg
