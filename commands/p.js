@@ -7,15 +7,21 @@ module.exports = {
   aliases: ['ping'],
   description: 'Check if the bot is online',
 
-  /**
-   * @param {object} sock   - Baileys socket
-   * @param {object} msg    - Full WAMessage object
-   * @param {string} jid    - Chat JID (sender or group)
-   * @param {string[]} args - Remaining arguments after prefix+command
-   */
   async execute(sock, msg, jid, args) {
     const start = Date.now();
     const sent = await sock.sendMessage(jid, { text: `🏓 Pinging...` }, { quoted: msg });
-    await sock.sendMessage(jid, { text: `🏓 *𝑴𝑼𝑭𝑨𝑺𝑬𝑹-𝑿* speed: ${Date.now() - start}ms`, edit: sent.key });
+
+    // fancy numbers: 0-9 -> 𝟎-𝟗
+    const fancyNums = {
+      '0':'𝟎','1':'𝟏','2':'𝟐','3':'𝟑','4':'𝟒','5':'𝟓','6':'𝟔','7':'𝟕','8':'𝟖','9':'𝟗'
+    };
+    const ms = Date.now() - start;
+    const fancyMs = String(ms).split('').map(d => fancyNums[d] || d).join('');
+
+    // exact style you wanted
+    const finalText = `_𝑴𝑼𝑭𝑨𝑺𝑬𝑹-𝑿 𝑼𝑳𝑻𝑹𝑨_ 𝒔𝒑𝒆𝒆𝒅:
+    ${fancyMs}𝒎𝒔`;
+
+    await sock.sendMessage(jid, { text: finalText, edit: sent.key });
   },
 };

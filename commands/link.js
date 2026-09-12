@@ -24,11 +24,11 @@ module.exports = {
       try {
         code = await sock.groupInviteCode(jid);
       } catch (inviteError) {
-        return await sock.sendMessage(jid, { text: '🥴 *Sorry Comrade, this group link is locked* 🥴' }, { quoted: msg });
+        return await sock.sendMessage(jid, { text: '🥴 *Sorry Comrade, this group link is locked*' }, { quoted: msg });
       }
 
       if (!code) {
-        return await sock.sendMessage(jid, { text: '🥴 *Sorry Comrade, this group link is locked* 🥴' }, { quoted: msg });
+        return await sock.sendMessage(jid, { text: '🥴 *Sorry Comrade, this group link is locked*' }, { quoted: msg });
       }
 
       const link = `https://chat.whatsapp.com/${code}`;
