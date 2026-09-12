@@ -16,6 +16,6 @@ module.exports = {
   async execute(sock, msg, jid, args) {
     const start = Date.now();
     const sent = await sock.sendMessage(jid, { text: `🏓 Pinging...` }, { quoted: msg });
-    await sock.sendMessage(jid, { text: `🏓 *Pong ✅ Bot is online - MUFASER-X*\n⚡ Response: ${Date.now() - start}ms`, edit: sent.key });
+    await sock.sendMessage(jid, { text: `🏓 *𝑴𝑼𝑭𝑨𝑺𝑬𝑹-𝑿* speed: ${Date.now() - start}ms`, edit: sent.key });
   },
 };
