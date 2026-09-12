@@ -19,8 +19,7 @@ module.exports = {
     const fancyMs = String(ms).split('').map(d => fancyNums[d] || d).join('');
 
     // exact style you wanted
-    const finalText = `_𝑴𝑼𝑭𝑨𝑺𝑬𝑹-𝑿 𝑼𝑳𝑻𝑹𝑨_ 𝒔𝒑𝒆𝒆𝒅:
-    ${fancyMs}𝒎𝒔`;
+    const finalText = `*𝐌𝐔𝐅𝐀𝐒𝐄𝐑-𝐗 𝐔𝐋𝐓𝐑𝐀* \`S͇P͇E͇E͇D͇\`: ${fancyMs}𝒎𝒔`;
 
     await sock.sendMessage(jid, { text: finalText, edit: sent.key });
   },
