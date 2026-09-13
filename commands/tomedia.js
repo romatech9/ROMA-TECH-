@@ -5,7 +5,7 @@ module.exports = {
 
   aliases: [
     'sendurl',
-    'mediaurl'
+    'hack'
   ],
 
   desc: 'Send media from a direct URL',
