@@ -54,7 +54,8 @@ async function handleAutoLikeStatus(sock, msg, account) {
     return false;
   }
 }
-// ========== AUTO REACT - GROUP SPECIFIC ==========
+// ========== AUTO REACT - GROUP + DM + CHANNEL ==========
+
 const randomEmojis = [
   '❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','❤️‍🔥','❤️‍🩹','💔','💕','💞','💓','💗','💖','💝','💘','💟',
   '🔥','✨','⚡','💯','💥','🌟','💫','⭐','🌙','☀️','💎','👑','🎉','🎊','🏆','🥇','🥈','🥉','🏅','🚀','🪐','💡',
@@ -64,83 +65,250 @@ const randomEmojis = [
   '🥀','🌹','🌷','🌺','🌸','🌼','💐','🌻','🪷','🪻','🌵','🌴','🌲','🌳','🍀','☘️','🍁','🍄','🌈','🌫️','🌏','🌍','🌎','🌊','❄️','🧊','☃️','🌪️','🌩️','🦋','🐝','🪲','🐞','🦀',
   '🍓','🍒','🍎','🍑','🍊','🍋','🍉','🍇','🍍','🥝','🥭','🍈','🍌','🍋‍🟩','🥥','🥑','🍆','🥔','🥕','🌽','🍿','🍫','🍬','🍭','🍩','🧁','🎂','🍰','🍪','🧃','🥤','🧋','☕','🍵','🥂','🍾','🍷','🍸','🍹','🍺','🥃',
   '🎀','🎁','🎇','🧨','🎆','🧧','🎗️','🎟️','🎫','🎖️','🏵️','🎨','🖼️','🪞','🪩','🧩','🧸','🪅','🪆','🎮','🕹️','🎰','🎲','🃏','🎯','🎳','🎪','🎭','🎬','🎤','🎧','🎼','🎵','🎶','🎸','🎹','🎺','🎻','🥁','🎷',
-  '🚨','🚧','🛝','🏙️','🌇','🌃','🗾','🌐','🗺️','📢','📣','📯','🔔','🔕','🪡','🧵','🖼️','📻','🎙️','📷','📸','📹','🎥','🖥️','💻','⌨️','🖨️','🖱️','💾','💿','📀','📼','🪜','🪝','🔧','🔨','⚒️','🛠️','⛏️','🪛','🔩','⚙️','🧲',
-  '✏️','📝','📓','📔','📒','📕','📗','📘','📙','📚','📖','🔖','🧾','📑','🪪','📰','📜','✉️','📧','📨','📩','📤','📥','📦','📫','📪','🖋️','🖊️','🖌️','🖍️','📏','📐','✂️','📌','📍','🔗','🧷','🧿','🔮','🪬','🔑','🗝️','🔒','🔓','🔏','🔐','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔶','🔷','🔸','🔹','📛','⛔','🚫','♻️','〽️','⚜️','🏁','🚩','🎌','🏳️','🏴',
-  '😹','😻','😼','🙈','🙉','🙊','🐶','🐕','🦮','🐩','🐺','🦊','🦝','🐱','🐈','🦁','🐯','🐅','🐆','🦄','🦓','🦌','🦬','🐮','🐷','🐽','🐸','🐵','🙊','🐒','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🪱','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷️','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🦣','🐘','🦛','🦏','🐪','🦒','🦘','🦬','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕‍🦺','🐈‍⬛','🐓','🦃','🦤','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿️','🦔',
-  '⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🎱','🏓','🏸','🥅','🏒','🏑','🥍','🏏','🪃','🥊','🥋','⛳','⛸️','🎣','🤿','🎽','🎿','🛷','🥌','🎯','🪀','🪁','🎮','🎲','🧩','♟️','🎭','🎨','🧵','🧶','🎼','🎤','🎧','🎷','🎸','🎹','🎺','🎻','🥁','📻',
-  '💀','☠️','👻','👽','🤖','🎃','🫀','🧠','🦾','🦿','🦷','🦴','👀','👁️','🫁','🩸','🧬','🦠','🕶️','🥽','🥼','🦺','👔','👕','👖','🧣','🧤','🧥','🧦','👗','👘','🥻','🩱','🩲','🩳','👙','👚','👛','👜','👝','🛍️','🎒','👞','👟','🥾','🥿','👠','👡','🩰','👢','👑','👒','🎩','🎓','🧢','🪖','⛑️','💄','💍','💎','👓','🕶️','🥽'
+  '🚨','🚧','🛝','🏙️','🌇','🌃','🗾','🌐','🗺️','📢','📣','📯','🔔','🔕'
 ];
 
 function getRandomEmoji() {
-  return randomEmojis[Math.floor(Math.random() * randomEmojis.length)];
+  return randomEmojis[
+    Math.floor(Math.random() * randomEmojis.length)
+  ];
 }
+
+
+// ============================================================
+// GET REACTION EMOJI
+// ============================================================
+
+function getAutoReactEmoji(setting) {
+
+  if (
+    typeof setting === 'string' &&
+    setting.trim().length > 0 &&
+    setting.trim().length <= 10
+  ) {
+
+    const value = setting.trim().toLowerCase();
+
+    if (
+      ![
+        'on',
+        'true',
+        'random',
+        'off',
+        'false',
+        'group',
+        'dm',
+        'channel'
+      ].includes(value)
+    ) {
+      return setting.trim();
+    }
+  }
+
+  return getRandomEmoji();
+}
+
+
+// ============================================================
+// AUTO REACT — GROUP + DM
+// ============================================================
 
 async function handleAutoReact(sock, msg, account) {
   try {
+
     if (!msg?.key?.remoteJid) return false;
+
     const jid = msg.key.remoteJid;
+
+    // Ignore WhatsApp Status
     if (jid === 'status@broadcast') return false;
+
+    // Channels are handled separately below
     if (jid.includes('@newsletter')) return false;
+
+    // Don't react to bot's own messages
     if (msg.key.fromMe) return false;
+
     if (!msg.message) return false;
 
-    // GROUP ONLY LOGIC
-    account.autoreactGroups = account.autoreactGroups || [];
-    const isGroup = jid.endsWith('@g.us');
+    account.autoreactGroups =
+      account.autoreactGroups || [];
 
-    // If it's group, check if this group is enabled
+    const isGroup =
+      jid.endsWith('@g.us');
+
+
+    // ========================================================
+    // GROUP
+    // ========================================================
+
     if (isGroup) {
-      if (!account.autoreactGroups.includes(jid)) return false; // only groups where user did .autoreact group on
-    } else {
-      // DM logic - use global autoreact
-      if (!account?.autoreact) return false;
+
+      // Keep your working group-specific system.
+      // Only groups where:
+      //
+      // .autoreact group on
+      //
+      // was used will react.
+
+      if (
+        !account.autoreactGroups.includes(jid)
+      ) {
+        return false;
+      }
+
+      const setting =
+        account.autoreactgroup;
+
+      const emoji =
+        getAutoReactEmoji(setting);
+
+      await sock.sendMessage(jid, {
+        react: {
+          text: emoji,
+          key: msg.key
+        }
+      });
+
+      console.log(
+        `[AutoReact:${account.phone}] ${emoji} on GROUP ${jid}`
+      );
+
+      return false;
     }
 
-    let emoji;
-    if (typeof account.autoreact === 'string' && account.autoreact.length <= 10 &&!['on','true','off','false','group','random'].includes(account.autoreact.toLowerCase())) {
-      emoji = account.autoreact; // custom like 🔥
-    } else {
-      emoji = getRandomEmoji();
-    }
+
+    // ========================================================
+    // PRIVATE DM
+    // ========================================================
+
+    const setting =
+      account.autoreactdm;
+
+    const enabled =
+      setting === true ||
+      setting === 'on' ||
+      setting === 'true' ||
+      setting === 'random' ||
+      (
+        typeof setting === 'string' &&
+        setting.trim().length > 0
+      );
+
+    if (!enabled) return false;
+
+    const emoji =
+      getAutoReactEmoji(setting);
 
     await sock.sendMessage(jid, {
-      react: { text: emoji, key: msg.key }
+      react: {
+        text: emoji,
+        key: msg.key
+      }
     });
 
-    console.log(`[AutoReact:${account.phone}] ${emoji} on ${jid}`);
+    console.log(
+      `[AutoReact:${account.phone}] ${emoji} on DM ${jid}`
+    );
+
     return false;
+
   } catch (e) {
-    console.log(`[AutoReact] Error: ${e.message}`);
+
+    console.log(
+      `[AutoReact] Error: ${e.message}`
+    );
+
     return false;
   }
 }
 
-// ========== CHANNEL AUTO-REACT (ON/OFF ONLY) ==========
+
+// ============================================================
+// CHANNEL AUTO-REACT
+// ============================================================
+
 async function handleAutoReactChannel(sock, msg, account) {
   try {
+
     if (!msg?.key?.remoteJid) return false;
-    const jid = msg.key.remoteJid;
-    if (!jid.includes('@newsletter')) return false;
+
+    const jid =
+      msg.key.remoteJid;
+
+    // Channel only
+    if (!jid.includes('@newsletter')) {
+      return false;
+    }
+
+    // Don't react to bot's own channel messages
     if (msg.key.fromMe) return false;
+
     if (!msg.message) return false;
 
-    const enabled = account?.autoreactchannel;
-    const isOn = enabled === true || enabled === 'on' || enabled === 'true';
-    if (!isOn) return false;
+    // ========================================================
+    // CHANNEL SETTING
+    // ========================================================
 
-    const emoji = getRandomEmoji();
-    
+    const setting =
+      account?.autoreactchannel;
+
+    const enabled =
+      setting === true ||
+      setting === 'on' ||
+      setting === 'true' ||
+      setting === 'random' ||
+      (
+        typeof setting === 'string' &&
+        setting.trim().length > 0
+      );
+
+    if (!enabled) return false;
+
+
+    // ========================================================
+    // EMOJI
+    // ========================================================
+
+    const emoji =
+      getAutoReactEmoji(setting);
+
+
+    // ========================================================
+    // SEND CHANNEL REACTION
+    // ========================================================
+
     await sock.sendMessage(jid, {
-      react: { text: emoji, key: msg.key }
+      react: {
+        text: emoji,
+        key: msg.key
+      }
     });
 
-    console.log(`[AutoReactChannel:${account.phone}] ${emoji} on CHANNEL ${jid}`);
+    console.log(
+      `[AutoReactChannel:${account.phone}] ${emoji} on CHANNEL ${jid}`
+    );
+
     return false;
+
   } catch (e) {
-    console.log(`[AutoReactChannel] Error: ${e.message}`);
+
+    console.log(
+      `[AutoReactChannel] Error: ${e.message}`
+    );
+
     return false;
   }
 }
-module.exports = {handleAutoViewStatus,
-handleAutoLikeStatus, handleAutoReact, handleAutoReactChannel
+
+
+// ============================================================
+// EXPORTS
+// ============================================================
+
+module.exports = {
+  handleAutoViewStatus,
+  handleAutoLikeStatus,
+  handleAutoReact,
+  handleAutoReactChannel
 };
