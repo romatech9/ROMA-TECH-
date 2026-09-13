@@ -49,7 +49,7 @@ const loading = await sock.sendMessage(jid, { text: `𝙇𝙤𝙖𝙙𝙞𝙣�
 ║∼❖ DEV : ROMA-TECH           
 ╚∼▬▬ι══════════════ι▬▬
 ${more}
-╔╔═≫「❒ *OWNER MENU* ❒」 
+╔═≫「❒ *OWNER MENU* ❒」 
 ┃➽ ${config.prefix}setprefix
 ┃➽ ${config.prefix}mode
 ┃➽ ${config.prefix}addsudo
@@ -77,14 +77,14 @@ ${more}
 ┃ ➽ ${config.prefix}createcomnit
 ╚❏ 
 
-╔╔═≫「❒ *ANTI MENU* ❒」
+╔═≫「❒ *ANTI MENU* ❒」
 ┃➽ ${config.prefix}antidelete 
 ┃➽ ${config.prefix}anticall
 ┃➽ ${config.prefix}antidm
 ┃➽ ${config.prefix}antideletestatus 
 ╚❏
 
-╔╔═≫「❒ *AUTO MENU* ❒」
+╔═≫「❒ *AUTO MENU* ❒」
 ┃➽ ${config.prefix}autoviewstatus
 ┃➽ ${config.prefix}autolike
 ┃➽ ${config.prefix}autolikestatus
@@ -92,7 +92,7 @@ ${more}
 ┃➽ ${config.prefix}autoreactchannel
 ╚❏
                              
-╔╔═≫「❒ *UNITY MENU* ❒」 
+╔═≫「❒ *UNITY MENU* ❒」 
 ┃➽ ${config.prefix}menu
 ┃➽ ${config.prefix}p
 ┃➽ ${config.prefix}s
@@ -117,9 +117,10 @@ ${more}
 ┃➽ ${config.prefix}toaudio2
 ┃➽ ${config.prefix}tomedia
 ┃➽ ${config.prefix}tocode
+┃➽ ${config.prefix}toemoji
 ╚❏
 
-╔╔═≫「❒ *GROUP MENU* ❒」 
+╔═≫「❒ *GROUP MENU* ❒」 
 ┃➽ ${config.prefix}add
 ┃➽ ${config.prefix}invite
 ┃➽ ${config.prefix}tagall 
@@ -210,7 +211,7 @@ ${more}
 ┃➽ ${config.prefix}unpin
 ╚❏
 
-╔╔═≫「❒ *ANTI GC MENU* ❒」
+╔═≫「❒ *ANTI GC MENU* ❒」
 ┃➽ ${config.prefix}antilink 
 ┃➽ ${config.prefix}antibot
 ┃➽ ${config.prefix}antitag 
@@ -229,13 +230,13 @@ ${more}
 ┃➽ ${config.prefix}antiimage
 ╚❏
 
-╔╔═≫「❒ *DOWNLOAD MENU* ❒」 
+╔═≫「❒ *DOWNLOAD MENU* ❒」 
 ┃➽ ${config.prefix}song
 ┃➽ ${config.prefix}play 
 ┃➽ ${config.prefix}url
 ╚❏
 
-╔╔═≫「❒ *TTS MENU* ❒」
+╔═≫「❒ *TTS MENU* ❒」
 ┃➽ ${config.prefix}sham
 ┃➽ ${config.prefix}tts 
 ┃➽ ${config.prefix}adam
@@ -243,7 +244,7 @@ ${more}
 ┃➽ ${config.prefix}boy
 ╚❏
 
-╔╔═≫「❒ *SOUNDS MENU* ❒」
+╔═≫「❒ *SOUNDS MENU* ❒」
 ┃➽ ${config.prefix}sound1
 ┃➽ ${config.prefix}sound2
 ┃➽ ${config.prefix}sound3
@@ -259,10 +260,10 @@ ${more}
       'https://res.cloudinary.com/vaitzgwv/image/upload/v1789098558/rbl1gcl0i2i7dhf2in2j.jpg'
     ];
 
-    const randomImage = images[Math.floor(Math.random() * images.length)];
+   const randomImage = images[Math.floor(Math.random() * images.length)];
+   
+   try { await sock.sendMessage(jid, { delete: loading.key }); } catch {}
     
-    try { await sock.sendMessage(jid, { delete: loading.key }); } catch {}
-
     await sock.sendMessage(jid, { 
       image: { url: randomImage },
       caption: menu
