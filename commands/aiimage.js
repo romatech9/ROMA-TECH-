@@ -745,10 +745,7 @@ async function execute(sock, msg, jid, args, sender, account) {
       {
         image: imageBuffer,
         caption:
-          `🖼️ *${config.title}*\n\n` +
-          `📝 *Prompt:* ${userPrompt}\n\n` +
-          `🤖 *MUFASER-X AI*\n` +
-          `🇺🇬 *ROMA-TECH*`
+          `> *POWERED BY @MUFASER-X BOT*`
       },
       { quoted: msg }
     );
