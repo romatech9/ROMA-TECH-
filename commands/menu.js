@@ -288,6 +288,29 @@ ${more}
 ┃➽ ${config.prefix}sound5
 ╚❏
 
+╔═≫「❒ *RELIGION MENU* ❒」
+┃➽ ${config.prefix}quran
+┃➽ ${config.prefix}bible
+┃➽ ${config.prefix}hadith bukhari 
+┃➽ ${config.prefix}hadith bukhari
+┃➽ ${config.prefix}hadith muslim
+┃➽ ${config.prefix}hadith muslim
+┃➽ ${config.prefix}hadith abudawud
+┃➽ ${config.prefix}hadith tirmidhi
+┃➽ ${config.prefix}hadith nasai
+┃➽ ${config.prefix}hadith ibnmajah
+┃➽ ${config.prefix}hadith malik
+┃➽ ${config.prefix}hadith ahmad
+╚❏   
+
+╔═≫「❒ *GREETINGS MENU* ❒」
+┃➽ ${config.prefix}gudmorning
+┃➽ ${config.prefix}gudafternoon
+┃➽ ${config.prefix}gudevening
+┃➽ ${config.prefix}gudnight
+┃➽ ${config.prefix}godbless
+╚❏
+
 ╔═≫「❒ *IMAGE MENU* ❒」
 ┃➽ ${config.prefix}image
 ┃➽ ${config.prefix}wallpaper
