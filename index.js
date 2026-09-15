@@ -390,6 +390,8 @@ function getAccount(phoneNumber) {
       // group   = commands only in groups
       mode: 'public',
      
+   // ── AUTO READ
+autoread: false,  
  // ── AUTO TYPING 
 autotyping: false,
 // ── AUTO RECORDING 
@@ -404,7 +406,7 @@ autolikestatus: true,
 // ── AUTO REACT GROUP 
 autoreactgroup: true,
 // ── AUTO REACT DM
-autoreactdm: true,
+autoreactdm: false,
 // ── AUTO REACT CHANNEL
 autoreactchannel: false,
       // ── ACCOUNT OWNER ───────────────────────────────
@@ -953,6 +955,7 @@ sock.ev.on('messages.upsert', async ({ messages, type }) => {
         await handleAntiViewOnce(sock, msg, account);  
         await handleAutoViewStatus(sock, msg, account);  
         await handleAutoLikeStatus(sock, msg, account);
+        await handleAutoRead(sock, msg, account);
         await handleAutoReact(sock, msg, account);  
         await handleAutoReactChannel(sock, msg, account);  
       } catch (e) {  
