@@ -61,7 +61,7 @@ module.exports = {
     const style = getMenuStyle();
     const styled = (t) => toStyle(t, style);
     const more = String.fromCharCode(8206).repeat(4001);
-    react: '📜',
+
  const rawMenu = `
 ╔═≫〔『❒ *𝗠𝗨𝗙𝗔𝗦𝗘𝗥-𝗫 𝗕𝗢𝗧* ❒』〕
 ║
