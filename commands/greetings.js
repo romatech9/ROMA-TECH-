@@ -1,62 +1,342 @@
 // ============================================================
-// MUFASER-X — GREETINGS COMMAND
-// gudmorning, gudafternoon, gudevening, gudnight, godbless
+// MUFASER-X — PREMIUM GREETINGS
+// Developer: ROMA-TECH 🇺🇬
+// Commands:
+// .gudmorning
+// .gudafternoon
+// .gudevening
+// .gudnight
+// .godbless
 // ============================================================
 
 module.exports = {
+
   name: 'gudmorning',
-  aliases: ['gudafternoon', 'gudevening', 'gudnight', 'godbless', 'goodmorning', 'goodafternoon', 'goodevening', 'goodnight'],
-  desc: 'Greetings',
+
+  aliases: [
+    'gudafternoon',
+    'gudevening',
+    'gudnight',
+    'godbless',
+
+    'goodmorning',
+    'goodafternoon',
+    'goodevening',
+    'goodnight'
+  ],
+
+  desc: 'Beautiful greetings and blessings',
+
   category: 'Fun',
-  usage: '.gudmorning /.gudafternoon /.gudevening /.gudnight /.godbless',
+
+  usage:
+    '.gudmorning / .gudafternoon / .gudevening / .gudnight / .godbless',
+
 
   async execute(sock, msg, jid, args, sender) {
-    const cmd = (msg.message?.conversation || msg.message?.extendedTextMessage?.text || '').toLowerCase().split(' ')[0].replace(/^[.\/!#]/, '').trim();
-    const pushName = msg.pushName || sender?.split('@')[0] || 'Comrade';
 
-    const replies = {
-      gudmorning: {
-        text: `🌅 *Good Morning ${pushName}!* \n\n☀️ Rise and shine comrade!\nMay your day be full of wins and blessings.`,
-        react: '🌅'
-      },
-      goodmorning: {
-        text: `🌅 *Good Morning ${pushName}!* \n\n☀️ Rise and shine comrade!\nMay your day be full of wins and blessings.`,
-        react: '🌅'
-      },
-      gudafternoon: {
-        text: `🌤️ *Good Afternoon ${pushName}!* \n\nHope your day is going smooth. Keep pushing! 💪`,
-        react: '🌤️'
-      },
-      goodafternoon: {
-        text: `🌤️ *Good Afternoon ${pushName}!* \n\nHope your day is going smooth. Keep pushing! 💪`,
-        react: '🌤️'
-      },
-      gudevening: {
-        text: `🌆 *Good Evening ${pushName}!* \n\nEvening vibes, relax and enjoy. You did well today! ✨`,
-        react: '🌆'
-      },
-      goodevening: {
-        text: `🌆 *Good Evening ${pushName}!* \n\nEvening vibes, relax and enjoy. You did well today! ✨`,
-        react: '🌆'
-      },
-      gudnight: {
-        text: `🌙 *Good Night ${pushName}!* \n\nSleep tight, sweet dreams. Tomorrow we go harder! 😴💤`,
-        react: '🌙'
-      },
-      goodnight: {
-        text: `🌙 *Good Night ${pushName}!* \n\nSleep tight, sweet dreams. Tomorrow we go harder! 😴💤`,
-        react: '🌙'
-      },
-      godbless: {
-        text: `🙏 *God Bless You ${pushName}!* \n\nMay God protect you, guide you and open doors for you today. Amen! ❤️`,
-        react: '🙏'
-      }
-    };
+    try {
 
-    const data = replies[cmd] || replies['gudmorning'];
+      // ========================================================
+      // DETECT COMMAND
+      // ========================================================
 
-    try { await sock.sendMessage(jid, { react: { text: data.react, key: msg.key } }); } catch {}
+      const rawText =
+        msg?.message?.conversation ||
+        msg?.message?.extendedTextMessage?.text ||
+        '';
 
-    await sock.sendMessage(jid, { text: data.text }, { quoted: msg });
+      const cmd =
+        rawText
+          .trim()
+          .split(/\s+/)[0]
+          .replace(/^[.\/!#]/, '')
+          .toLowerCase();
+
+
+      // ========================================================
+      // USER NAME
+      // ========================================================
+
+      const pushName =
+        msg?.pushName ||
+        sender?.split('@')[0] ||
+        'Comrade';
+
+
+      // ========================================================
+      // GREETINGS
+      // ========================================================
+
+      const replies = {
+
+        // ──────────────────────────────────────────────────────
+        // MORNING
+        // ──────────────────────────────────────────────────────
+
+        gudmorning: {
+          react: '🌅',
+
+          text:
+            `🌅 *GOOD MORNING, ${pushName}!*\n\n` +
+
+            `☀️ A beautiful new day has arrived.\n` +
+            `Leave yesterday behind and step into today ` +
+            `with confidence, courage and a grateful heart. 💫\n\n` +
+
+            `🌱 *May your efforts bring you success,*\n` +
+            `❤️ *your heart find peace,*\n` +
+            `🙏 *and your day be filled with blessings.*\n\n` +
+
+            `✨ Keep believing. Keep pushing. Keep shining.\n\n` +
+
+            `Have a beautiful day, Comrade! 🤝🇺🇬`
+        },
+
+        goodmorning: {
+          react: '🌅',
+
+          text:
+            `🌅 *GOOD MORNING, ${pushName}!*\n\n` +
+
+            `☀️ A beautiful new day has arrived.\n` +
+            `Leave yesterday behind and step into today ` +
+            `with confidence, courage and a grateful heart. 💫\n\n` +
+
+            `🌱 *May your efforts bring you success,*\n` +
+            `❤️ *your heart find peace,*\n` +
+            `🙏 *and your day be filled with blessings.*\n\n` +
+
+            `✨ Keep believing. Keep pushing. Keep shining.\n\n` +
+
+            `Have a beautiful day, Comrade! 🤝🇺🇬`
+        },
+
+
+        // ──────────────────────────────────────────────────────
+        // AFTERNOON
+        // ──────────────────────────────────────────────────────
+
+        gudafternoon: {
+          react: '🌤️',
+
+          text:
+            `🌤️ *GOOD AFTERNOON, ${pushName}!*\n\n` +
+
+            `💫 Half the day may be gone, but there is still ` +
+            `plenty of time to make something amazing happen.\n\n` +
+
+            `💪 Keep going.\n` +
+            `🎯 Stay focused.\n` +
+            `❤️ Don't forget to take care of yourself.\n\n` +
+
+            `May the rest of your day bring you good news, ` +
+            `peace of mind and reasons to smile. 😊\n\n` +
+
+            `✨ Keep pushing, Comrade!`
+        },
+
+        goodafternoon: {
+          react: '🌤️',
+
+          text:
+            `🌤️ *GOOD AFTERNOON, ${pushName}!*\n\n` +
+
+            `💫 Half the day may be gone, but there is still ` +
+            `plenty of time to make something amazing happen.\n\n` +
+
+            `💪 Keep going.\n` +
+            `🎯 Stay focused.\n` +
+            `❤️ Don't forget to take care of yourself.\n\n` +
+
+            `May the rest of your day bring you good news, ` +
+            `peace of mind and reasons to smile. 😊\n\n` +
+
+            `✨ Keep pushing, Comrade!`
+        },
+
+
+        // ──────────────────────────────────────────────────────
+        // EVENING
+        // ──────────────────────────────────────────────────────
+
+        gudevening: {
+          react: '🌆',
+
+          text:
+            `🌆 *GOOD EVENING, ${pushName}!*\n\n` +
+
+            `✨ The day is slowly coming to an end.\n\n` +
+
+            `Whatever happened today, be proud that you made it ` +
+            `this far. Some battles were won, some lessons were learned, ` +
+            `and tomorrow is another opportunity. 🌙\n\n` +
+
+            `🕊️ Let your mind rest.\n` +
+            `❤️ Let your heart breathe.\n` +
+            `🙏 Be grateful for another day.\n\n` +
+
+            `Enjoy your evening, Comrade. 🤝✨`
+        },
+
+        goodevening: {
+          react: '🌆',
+
+          text:
+            `🌆 *GOOD EVENING, ${pushName}!*\n\n` +
+
+            `✨ The day is slowly coming to an end.\n\n` +
+
+            `Whatever happened today, be proud that you made it ` +
+            `this far. Some battles were won, some lessons were learned, ` +
+            `and tomorrow is another opportunity. 🌙\n\n` +
+
+            `🕊️ Let your mind rest.\n` +
+            `❤️ Let your heart breathe.\n` +
+            `🙏 Be grateful for another day.\n\n` +
+
+            `Enjoy your evening, Comrade. 🤝✨`
+        },
+
+
+        // ──────────────────────────────────────────────────────
+        // NIGHT
+        // ──────────────────────────────────────────────────────
+
+        gudnight: {
+          react: '🌙',
+
+          text:
+            `🌙 *GOOD NIGHT, ${pushName}!*\n\n` +
+
+            `✨ The world can wait until tomorrow.\n` +
+            `Tonight, give yourself permission to rest.\n\n` +
+
+            `🕊️ May your worries become lighter,\n` +
+            `❤️ your heart become peaceful,\n` +
+            `😴 and your sleep be calm and refreshing.\n\n` +
+
+            `🙏 May tomorrow bring you new strength, ` +
+            `new opportunities and beautiful reasons to smile.\n\n` +
+
+            `🌌 Sleep well, Comrade.\n` +
+            `Tomorrow is another chance to shine. ✨`
+        },
+
+        goodnight: {
+          react: '🌙',
+
+          text:
+            `🌙 *GOOD NIGHT, ${pushName}!*\n\n` +
+
+            `✨ The world can wait until tomorrow.\n` +
+            `Tonight, give yourself permission to rest.\n\n` +
+
+            `🕊️ May your worries become lighter,\n` +
+            `❤️ your heart become peaceful,\n` +
+            `😴 and your sleep be calm and refreshing.\n\n` +
+
+            `🙏 May tomorrow bring you new strength, ` +
+            `new opportunities and beautiful reasons to smile.\n\n` +
+
+            `🌌 Sleep well, Comrade.\n` +
+            `Tomorrow is another chance to shine. ✨`
+        },
+
+
+        // ──────────────────────────────────────────────────────
+        // GOD BLESS
+        // ──────────────────────────────────────────────────────
+
+        godbless: {
+          react: '🙏',
+
+          text:
+            `🙏 *GOD BLESS YOU, ${pushName}!*\n\n` +
+
+            `❤️ May God watch over you,\n` +
+            `🛡️ protect you from every danger,\n` +
+            `🧭 guide your steps,\n` +
+            `🚪 open the right doors,\n` +
+            `💪 give you strength when life gets difficult,\n` +
+            `🌱 and bless the work of your hands.\n\n` +
+
+            `✨ May peace live in your heart,\n` +
+            `✨ hope stay in your soul,\n` +
+            `✨ and blessings follow you wherever you go.\n\n` +
+
+            `🤲 *May God bless you and your loved ones.*\n\n` +
+
+            `❤️ *Amen.*`
+        }
+
+      };
+
+
+      // ========================================================
+      // GET RESPONSE
+      // ========================================================
+
+      const data =
+        replies[cmd] ||
+        replies.gudmorning;
+
+
+      // ========================================================
+      // REACTION
+      // ========================================================
+
+      try {
+
+        await sock.sendMessage(
+          jid,
+          {
+            react: {
+              text: data.react,
+              key: msg.key
+            }
+          }
+        );
+
+      } catch (_) {}
+
+
+      // ========================================================
+      // SEND GREETING
+      // ========================================================
+
+      return await sock.sendMessage(
+        jid,
+        {
+          text: data.text
+        },
+        {
+          quoted: msg
+        }
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        '[Greetings] Error:',
+        error?.message || error
+      );
+
+      return await sock.sendMessage(
+        jid,
+        {
+          text:
+            `❌ *Something went wrong.*\n\n` +
+            `Please try the greeting command again.`
+        },
+        {
+          quoted: msg
+        }
+      );
+
+    }
+
   }
+
 };

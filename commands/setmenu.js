@@ -1,5 +1,5 @@
 // ============================================================
-// MUFASER-X — SETMENU COMMAND 
+// MUFASER-X — SETMENU COMMAND (1-9)
 // ============================================================
 const fs = require('fs');
 const path = require('path');
@@ -9,7 +9,7 @@ module.exports = {
   aliases: ['setmunu', 'menustyle'],
   desc: 'Owner only: Set menu style',
   category: 'Owner',
-  usage: '.setmenu 1-6',
+  usage: '.setmenu 1-9',
 
   async execute(sock, msg, jid, args, sender, account) {
 
@@ -23,7 +23,7 @@ module.exports = {
 
     const s = args[0];
 
-    if (!s ||!['1','2','3','4','5','6'].includes(s)) {
+    if (!s ||!['1','2','3','4','5','6','7','8','9'].includes(s)) {
       return await sock.sendMessage(jid, {
         text: `*SET MENU STYLE*\n\n` +
               `.setmenu 1 = 𝑯𝑬𝑳𝑳𝑶\n` +
@@ -31,8 +31,11 @@ module.exports = {
               `.setmenu 3 = 𝙃𝙀𝙇𝙇𝙊\n` +
               `.setmenu 4 = 𝐇𝐄𝐋𝐋𝐎\n` +
               `.setmenu 5 = H̷E̷L̷L̷O̷\n` +
-              `.setmenu 6 = > HELLO\n\n` +
-              `Example:.setmenu 6`
+              `.setmenu 6 = > HELLO\n` +
+              `.setmenu 7 = HELLO\n` +
+              `.setmenu 8 = 𝙷𝙴𝙻𝙻𝙾\n` +
+              `.setmenu 9 = ℍ𝔼𝕃𝕃𝕆\n\n` +
+              `Example:.setmenu 9`
       }, { quoted: msg });
     }
 
