@@ -301,6 +301,38 @@ async function handleAutoReactChannel(sock, msg, account) {
   }
 }
 
+// ============================================================
+// AUTO READ
+// ============================================================
+
+async function handleAutoRead(sock, msg, account) {
+  try {
+
+    if (!msg?.key?.remoteJid) return false;
+
+    // Don't read our own messages
+    if (msg.key.fromMe) return false;
+
+    // Auto Read must be enabled
+    if (account?.autoread !== true) return false;
+
+    await sock.readMessages([msg.key]);
+
+    console.log(
+      `[AutoRead:${account.phone}] ✓✓ Message marked as read`
+    );
+
+    return false;
+
+  } catch (e) {
+
+    console.log(
+      `[AutoRead] Error: ${e.message}`
+    );
+
+    return false;
+  }
+}
 
 // ============================================================
 // EXPORTS
@@ -310,5 +342,6 @@ module.exports = {
   handleAutoViewStatus,
   handleAutoLikeStatus,
   handleAutoReact,
-  handleAutoReactChannel
+  handleAutoReactChannel,
+  handleAutoRead
 };
