@@ -40,7 +40,7 @@ const { handleAntiViewOnce } = require('./lib/antiviewonce');
 const { saveAntiDeleteMessage, handleAntiDelete, handleAntiEdit, handleAntiCall } = require('./modules/anti');
 const { handleAntiAudio, handleAntiSong, handleAntiVideo, handleAntiForward } = require('./lib/antisong');
 const { handleAntiBadWord } = require('./lib/antibadword');
-const {handleAutoViewStatus, handleAutoLikeStatus, handleAutoReact, handleAutoReactChannel } = require('./modules/auto');
+const {handleAutoViewStatus, handleAutoLikeStatus, handleAutoReact, handleAutoReactChannel, handleAutoRead } = require('./modules/auto');
 // ── SESSION STORAGE ─────────────────────────────────────────
 // Each Session ID contains the complete Baileys auth folder, not only creds.json.
 // This is required for reliable restoration with useMultiFileAuthState.
