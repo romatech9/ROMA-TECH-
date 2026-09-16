@@ -50,6 +50,15 @@ module.exports = {
   name: 'menu',
   description: 'Show the bot command menu',
   async execute(sock, msg, jid, args, sender) {
+// ===== AUTOREACT ON MENU COMMAND =====
+    try {
+      await sock.sendMessage(jid, {
+        react: {
+          text: '📜',
+          key: msg.key
+        }
+      });
+    } catch {}
     const loading = await sock.sendMessage(jid, { text: `𝙇𝙤𝙖𝙙𝙞𝙣𝙜 𝙢𝙚𝙣𝙪.....` }, { quoted: msg });
     const uptime = formatUptime(process.uptime());
     const ram = getRamUsage();
@@ -84,8 +93,6 @@ ${more}
 ╔═≫「❒ *OWNER MENU* ❒」 
 ┃➽ ${config.prefix}setprefix
 ┃➽ ${config.prefix}mode
-┃➽ ${config.prefix}online
-┃➽ ${config.prefix}autoread
 ┃➽ ${config.prefix}addsudo
 ┃➽ ${config.prefix}listgc
 ┃➽ ${config.prefix}autotyping
@@ -131,6 +138,7 @@ ${more}
 ╚❏
 
 ╔═≫「❒ *AUTO MENU* ❒」
+┃➽ ${config.prefix}autoread
 ┃➽ ${config.prefix}autoviewstatus
 ┃➽ ${config.prefix}autolike
 ┃➽ ${config.prefix}autolikestatus
