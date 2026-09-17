@@ -1,11 +1,17 @@
 // ============================================================
 // MUFASER-X — TELEGRAM STICKER DOWNLOADER
+// STATIC + VIDEO + ANIMATED
 // ============================================================
 
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const TGS = require('tgs-to');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
+
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 module.exports = {
   name: 'telegramsticker',
@@ -25,7 +31,7 @@ module.exports = {
     try {
 
       // --------------------------------------------------------
-      // CHECK TELEGRAM TOKEN
+      // TELEGRAM TOKEN
       // --------------------------------------------------------
 
       const token =
@@ -44,7 +50,7 @@ module.exports = {
       }
 
       // --------------------------------------------------------
-      // GET URL
+      // URL
       // --------------------------------------------------------
 
       const url =
@@ -64,7 +70,7 @@ module.exports = {
       }
 
       // --------------------------------------------------------
-      // EXTRACT STICKER PACK NAME
+      // EXTRACT PACK NAME
       // --------------------------------------------------------
 
       let packName = null;
@@ -86,9 +92,7 @@ module.exports = {
           packName = parts[1];
         }
 
-      } catch (e) {
-        // handled below
-      }
+      } catch (e) {}
 
       if (!packName) {
         return await sock.sendMessage(
@@ -118,7 +122,7 @@ module.exports = {
       );
 
       // --------------------------------------------------------
-      // GET STICKER SET
+      // TELEGRAM API
       // --------------------------------------------------------
 
       const api =
@@ -167,7 +171,7 @@ module.exports = {
         stickers.slice(0, maxStickers);
 
       // --------------------------------------------------------
-      // CREATE TEMP DIRECTORY
+      // TEMP DIRECTORY
       // --------------------------------------------------------
 
       tempDir =
@@ -188,8 +192,11 @@ module.exports = {
           text:
             `📦 *TELEGRAM STICKER PACK*\n\n` +
             `🎨 *Name:* ${stickerSet.title || packName}\n` +
-            `🔢 *Stickers:* ${stickers.length}\n` +
+            `🔢 *Total:* ${stickers.length}\n` +
             `📥 *Downloading:* ${selected.length}\n\n` +
+            `🖼️ Static\n` +
+            `🎥 Video\n` +
+            `🎞️ Animated\n\n` +
             `⏳ *Please wait...*`
         },
         { quoted: msg }
@@ -198,26 +205,32 @@ module.exports = {
       let sent = 0;
       let skipped = 0;
 
+      let staticCount = 0;
+      let videoCount = 0;
+      let animatedCount = 0;
+
       // --------------------------------------------------------
-      // DOWNLOAD STICKERS
+      // DOWNLOAD LOOP
       // --------------------------------------------------------
 
-      for (const sticker of selected) {
+      for (
+        let i = 0;
+        i < selected.length;
+        i++
+      ) {
+
+        const sticker =
+          selected[i];
 
         try {
 
-          // Only static stickers for this version
-          if (
-            !sticker.file_id ||
-            sticker.is_animated ||
-            sticker.is_video
-          ) {
+          if (!sticker.file_id) {
             skipped++;
             continue;
           }
 
           // ----------------------------------------------------
-          // GET TELEGRAM FILE
+          // GET FILE PATH
           // ----------------------------------------------------
 
           const fileResponse =
@@ -240,10 +253,10 @@ module.exports = {
           }
 
           // ----------------------------------------------------
-          // DOWNLOAD WEBP
+          // DOWNLOAD FILE
           // ----------------------------------------------------
 
-          const imageResponse =
+          const downloadResponse =
             await axios.get(
               `https://api.telegram.org/file/bot${token}/${filePath}`,
               {
@@ -252,41 +265,183 @@ module.exports = {
               }
             );
 
-          const inputPath =
-            path.join(
-              tempDir,
-              `${sent + 1}.webp`
+          // ====================================================
+          // VIDEO STICKER
+          // ====================================================
+
+          if (sticker.is_video) {
+
+            videoCount++;
+
+            const webmPath =
+              path.join(
+                tempDir,
+                `video_${i}.webm`
+              );
+
+            const mp4Path =
+              path.join(
+                tempDir,
+                `video_${i}.mp4`
+              );
+
+            fs.writeFileSync(
+              webmPath,
+              downloadResponse.data
             );
 
-          fs.writeFileSync(
-            inputPath,
-            imageResponse.data
-          );
+            // --------------------------------------------------
+            // CONVERT WEBM → MP4
+            // --------------------------------------------------
 
-          // ----------------------------------------------------
-          // SEND AS WHATSAPP STICKER
-          // ----------------------------------------------------
+            await new Promise(
+              (resolve, reject) => {
 
-          await sock.sendMessage(
-            jid,
-            {
-              sticker: {
-                url: inputPath
+                ffmpeg(webmPath)
+                  .outputOptions([
+                    '-movflags +faststart',
+                    '-pix_fmt yuv420p'
+                  ])
+                  .videoCodec('libx264')
+                  .noAudio()
+                  .on(
+                    'end',
+                    resolve
+                  )
+                  .on(
+                    'error',
+                    reject
+                  )
+                  .save(mp4Path);
+
               }
-            }
-          );
+            );
 
-          sent++;
+            // --------------------------------------------------
+            // SEND VIDEO
+            // --------------------------------------------------
 
-          // Small delay to avoid sending too fast
+            await sock.sendMessage(
+              jid,
+              {
+                video: {
+                  url: mp4Path
+                },
+                mimetype:
+                  'video/mp4',
+                gifPlayback: true
+              }
+            );
+
+            sent++;
+
+          }
+
+          // ====================================================
+          // ANIMATED TGS STICKER
+          // ====================================================
+
+          else if (sticker.is_animated) {
+
+            animatedCount++;
+
+            const tgsPath =
+              path.join(
+                tempDir,
+                `animated_${i}.tgs`
+              );
+
+            const mp4Path =
+              path.join(
+                tempDir,
+                `animated_${i}.mp4`
+              );
+
+            fs.writeFileSync(
+              tgsPath,
+              downloadResponse.data
+            );
+
+            // --------------------------------------------------
+            // TGS → MP4
+            // --------------------------------------------------
+
+            const converter =
+              new TGS(tgsPath);
+
+            await converter.convertToMp4(
+              mp4Path
+            );
+
+            // --------------------------------------------------
+            // SEND ANIMATION
+            // --------------------------------------------------
+
+            await sock.sendMessage(
+              jid,
+              {
+                video: {
+                  url: mp4Path
+                },
+                mimetype:
+                  'video/mp4',
+                gifPlayback: true
+              }
+            );
+
+            sent++;
+
+          }
+
+          // ====================================================
+          // STATIC WEBP STICKER
+          // ====================================================
+
+          else {
+
+            staticCount++;
+
+            const inputPath =
+              path.join(
+                tempDir,
+                `static_${i}.webp`
+              );
+
+            fs.writeFileSync(
+              inputPath,
+              downloadResponse.data
+            );
+
+            // --------------------------------------------------
+            // SEND STICKER
+            // --------------------------------------------------
+
+            await sock.sendMessage(
+              jid,
+              {
+                sticker: {
+                  url: inputPath
+                }
+              }
+            );
+
+            sent++;
+
+          }
+
+          // ----------------------------------------------------
+          // DELAY
+          // ----------------------------------------------------
+
           await new Promise(
-            resolve => setTimeout(resolve, 300)
+            resolve =>
+              setTimeout(resolve, 400)
           );
 
         } catch (stickerError) {
 
           console.error(
-            '[TelegramSticker] Sticker error:',
+            `[TelegramSticker] Sticker ${i + 1} error:`,
             stickerError?.message
           );
 
@@ -303,8 +458,11 @@ module.exports = {
         {
           text:
             `✅ *TELEGRAM STICKER PACK DONE*\n\n` +
-            `📦 *Pack:* ${stickerSet.title || packName}\n` +
-            `📥 *Sent:* ${sent}\n` +
+            `📦 *Pack:* ${stickerSet.title || packName}\n\n` +
+            `🖼️ *Static:* ${staticCount}\n` +
+            `🎥 *Video:* ${videoCount}\n` +
+            `🎞️ *Animated:* ${animatedCount}\n\n` +
+            `📤 *Sent:* ${sent}\n` +
             `⏭️ *Skipped:* ${skipped}\n\n` +
             `⚡ *Powered By MUFASER-X*`
         },
@@ -334,7 +492,7 @@ module.exports = {
         error
       );
 
-      return await sock.sendMessage(
+      await sock.sendMessage(
         jid,
         {
           text:
