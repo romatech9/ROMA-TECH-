@@ -167,31 +167,35 @@ module.exports = {
           }
         );
       }
+      
+      // --------------------------------------------------------
+// GET AI INSTRUCTION
+// --------------------------------------------------------
 
-      const instruction =
-        args.join(' ').trim();
+const instruction =
+  Array.isArray(args)
+    ? args.join(' ').trim()
+    : String(args || '').trim();
 
-      if (!instruction) {
+if (!instruction) {
 
-        return await sock.sendMessage(
-          m.key.remoteJid,
-          {
-            text:
-              '❌ *Missing instruction.*\n\n' +
-
-              'Example:\n' +
-              '`.aiedit add a kid in the middle`\n\n' +
-
-              'Other examples:\n' +
-              '`.aiedit change the background to a beach`\n' +
-              '`.aiedit make the shirt black`\n' +
-              '`.aiedit remove the person on the left`'
-          },
-          {
-            quoted: m
-          }
-        );
-      }
+  return await sock.sendMessage(
+    m.key.remoteJid,
+    {
+      text:
+        '❌ *Missing instruction.*\n\n' +
+        'Example:\n' +
+        '`.aiedit add a kid in the middle`\n\n' +
+        'Other examples:\n' +
+        '`.aiedit change the background to a beach`\n' +
+        '`.aiedit make the shirt black`\n' +
+        '`.aiedit remove the person on the left`'
+    },
+    {
+      quoted: m
+    }
+  );
+}
 
       // --------------------------------------------------------
       // FIND REPLIED IMAGE
