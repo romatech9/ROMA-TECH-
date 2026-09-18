@@ -30,6 +30,7 @@ const config = require('./config.js');
 const { handleAntiSticker } = require('./lib/antisticker');
 const { handleAntiImage } = require('./lib/antiimage');
 const { handleAntiSpam } = require('./lib/antispam');
+const { handleChatbot } = require('./lib/chatbot');
 const { handleAntiText } = require('./lib/antitext');
 const {handleAntiLink} = require('./lib/antilink');
 const { handleAntiBot } = require('./lib/antibot');
@@ -389,8 +390,17 @@ function getAccount(phoneNumber) {
       // dm      = commands only in private inbox
       // group   = commands only in groups
       mode: 'public',
-     
-   // ── AUTO READ
+      
+      // ── AI CHATBOT ───────────────────────────────────────
+chatbot: {
+ // Individual group settings
+groups: {},
+// All private DMs
+dm: false,
+// Global chatbot
+  all: false
+},    
+// ── AUTO READ
 autoread: false,  
  // ── AUTO TYPING 
 autotyping: false,
@@ -1223,375 +1233,158 @@ deploy the bot on any pannle you want.
 }
 
 async function handleMessage(sock, msg, account) {
-  if (!msg?.message) return;
-  if (!msg?.key?.remoteJid) return;
+  if (!msg?.message || !msg?.key?.remoteJid) return;
 
   const jid = msg.key.remoteJid;
-
-  // save for antidelete + antiedit
   saveAntiDeleteMessage(msg);
   await handleAntiEdit(sock, msg, account);
   await handleAntiDelete(sock, msg, account);
 
-  // Ignore broadcasts/status
-  if (typeof isJidBroadcast === 'function' && isJidBroadcast(jid)) return;
-  if (jid === 'status@broadcast') return;
-  
-  // ============================================================
-  // CHAT TYPE
-  // ============================================================
+  if (
+    (typeof isJidBroadcast === 'function' && isJidBroadcast(jid)) ||
+    jid === 'status@broadcast'
+  ) return;
 
   const isGroup = jid.endsWith('@g.us');
 
-  // ============================================================
-  // SENDER
-  // ============================================================
-
   const senderJid =
-    msg.key.participant ||
-    msg.key.remoteJid;
+    msg.key.participant || msg.key.remoteJid;
 
-  const senderNumber =
-    String(senderJid)
-      .split('@')[0]
-      .split(':')[0]
-      .replace(/\D/g, '');
+  const senderNumber = String(senderJid)
+    .split('@')[0]
+    .split(':')[0]
+    .replace(/\D/g, '');
 
-  const ownerNumber =
-    String(
-      account?.ownerNumber ||
-      account?.phone ||
-      ''
-    )
-      .split('@')[0]
-      .split(':')[0]
-      .replace(/\D/g, '');
+  const ownerNumber = String(
+    account?.ownerNumber || account?.phone || ''
+  )
+    .split('@')[0]
+    .split(':')[0]
+    .replace(/\D/g, '');
 
   const mode = account?.mode || 'public';
-
-  // ============================================================
-  // BOT MODE CHECK
-  // ============================================================
 
   if (
     mode === 'private' &&
     !msg.key.fromMe &&
     senderNumber !== ownerNumber
+  ) return;
+
+  if (mode === 'dm' && isGroup) return;
+  if (mode === 'group' && !isGroup) return;
+
+  if (
+    !isGroup &&
+    !msg.key.fromMe &&
+    senderNumber !== ownerNumber &&
+    account?.antidm === true
   ) {
-    return;
+    if (!account.antidmAllowed) account.antidmAllowed = [];
+
+    if (!account.antidmAllowed.includes(jid)) {
+      try {
+        await sock.updateBlockStatus(jid, 'block');
+      } catch {}
+      return;
+    }
   }
 
-  if (mode === 'dm' && isGroup) {
-    return;
+  if (msg.key.fromMe && !isGroup) {
+    if (!account.antidmAllowed) account.antidmAllowed = [];
+    if (!account.antidmAllowed.includes(jid)) {
+      account.antidmAllowed.push(jid);
+    }
   }
-
-  if (mode === 'group' && !isGroup) {
-    return;
-  }
-// ANTI-DM SILENT BLOCK
-if (!isGroup && jid !== 'status@broadcast' && !msg.key.fromMe && senderNumber !== ownerNumber && account?.antidm === true) {
-  if (!account.antidmAllowed) account.antidmAllowed = [];
-  // if you already chatted with him, allow
-  if (!account.antidmAllowed.includes(jid)) {
-    try { 
-      await sock.updateBlockStatus(jid, 'block'); 
-      console.log(`[ANTIDM] Blocked new: ${jid}`);
-    } catch {}
-    return;
-  }
-}
-// AUTO-WHITELIST WHEN YOU SEND MESSAGE
-if (msg.key.fromMe && !isGroup && jid !== 'status@broadcast') {
-  if (!account.antidmAllowed) account.antidmAllowed = [];
-  if (!account.antidmAllowed.includes(jid)) {
-    account.antidmAllowed.push(jid);
-  }
-}
-  // ============================================================
-  // PRESENCE
-  // ============================================================
 
   let presenceType = null;
   let presenceStarted = false;
 
   try {
-
-    // ==========================================================
-    // DETERMINE ACTIVE PRESENCE
-    // ==========================================================
-
     if (account?.autotyping === true) {
       presenceType = 'composing';
     } else if (account?.autorecord === true) {
       presenceType = 'recording';
     }
 
-    console.log(
-      `[Presence:${account?.phone || 'unknown'}] ` +
-      `typing=${account?.autotyping} ` +
-      `recording=${account?.autorecord} ` +
-      `selected=${presenceType || 'none'}`
-    );
-
-    // ==========================================================
-    // START TYPING / RECORDING
-    // ==========================================================
-
     if (presenceType) {
       try {
-        await sock.sendPresenceUpdate(
-          presenceType,
-          jid
-        );
-
+        await sock.sendPresenceUpdate(presenceType, jid);
         presenceStarted = true;
-
-        console.log(
-          `[Presence:${account?.phone || 'unknown'}] ` +
-          `▶️ ${presenceType} → ${jid}`
-        );
-
-        await new Promise(resolve =>
-          setTimeout(resolve, 500)
-        );
-
-      } catch (error) {
-        console.error(
-          `[Presence:${account?.phone || 'unknown'}] ` +
-          `❌ Failed to start ${presenceType}:`,
-          error?.message || error
-        );
-      }
+        await new Promise(r => setTimeout(r, 500));
+      } catch {}
     }
 
-    // ==========================================================
-    // GET MESSAGE TEXT
-    // ==========================================================
-
-    const body =
+    const commandText = String(
       msg.message?.conversation ||
       msg.message?.extendedTextMessage?.text ||
       msg.message?.imageMessage?.caption ||
       msg.message?.videoMessage?.caption ||
       msg.message?.documentMessage?.caption ||
-      '';
+      ''
+    ).trim();
 
-    let commandText =
-      String(body || '').trim();
+    if (!commandText) return;
 
-    // ==========================================================
-    // VV2 EMOJI TRIGGER
-    //
-    // Reply to View Once/media with ONLY an emoji:
-    //
-    // 😥
-    // 🔥
-    // 😆
-    // 😂
-    // ❤️
-    // 👍
-    //
-    // This automatically executes .vv2
-    // ==========================================================
+    // ── VV2 emoji trigger
+    const isEmojiOnly = text => {
+      const value = String(text || '')
+        .trim()
+        .replace(/\uFE0F/g, '')
+        .replace(/\u200D/g, '');
 
-    const isEmojiOnly = (text) => {
-
-      if (!text) return false;
-
-      const value =
-        String(text)
-          .trim()
-          .replace(/\uFE0F/g, '')
-          .replace(/\u200D/g, '');
-
-      if (!value) return false;
-
-      // Must contain at least one emoji/pictographic character
       if (
-        !/[\p{Extended_Pictographic}\p{Emoji_Presentation}]/u.test(
-          value
+        !value ||
+        !/[\p{Extended_Pictographic}\p{Emoji_Presentation}]/u.test(value)
+      ) return false;
+
+      return value
+        .replace(
+          /[\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Emoji}\p{Mark}\p{Variation_Selector}\p{Regional_Indicator}\u200D]/gu,
+          ''
         )
-      ) {
-        return false;
-      }
-
-      // Remove all emoji-related characters
-      const remaining =
-        value
-          .replace(
-            /[\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Emoji}\p{Mark}\p{Variation_Selector}\p{Regional_Indicator}\u200D]/gu,
-            ''
-          )
-          .trim();
-
-      return remaining === '';
+        .trim() === '';
     };
 
-    // ==========================================================
-    // CHECK WHETHER REPLIED MESSAGE IS MEDIA
-    // ==========================================================
+    const isRepliedMedia = contextInfo => {
+      if (!contextInfo?.quotedMessage) return false;
 
-    const isRepliedMedia = (contextInfo) => {
+      let quoted = contextInfo.quotedMessage;
 
-      if (!contextInfo?.quotedMessage) {
-        return false;
+      while (quoted) {
+        const wrapped =
+          quoted.ephemeralMessage?.message ||
+          quoted.viewOnceMessageV2?.message ||
+          quoted.viewOnceMessageV2Extension?.message ||
+          quoted.viewOnceMessage?.message ||
+          quoted.documentWithCaptionMessage?.message;
+
+        if (!wrapped) break;
+        quoted = wrapped;
       }
 
-      let quoted =
-        contextInfo.quotedMessage;
-
-      let changed = true;
-
-      while (changed && quoted) {
-
-        changed = false;
-
-        // Ephemeral
-        if (
-          quoted.ephemeralMessage?.message
-        ) {
-          quoted =
-            quoted.ephemeralMessage.message;
-
-          changed = true;
-          continue;
-        }
-
-        // View Once V2
-        if (
-          quoted.viewOnceMessageV2?.message
-        ) {
-          quoted =
-            quoted.viewOnceMessageV2.message;
-
-          changed = true;
-          continue;
-        }
-
-        // View Once V2 Extension
-        if (
-          quoted.viewOnceMessageV2Extension?.message
-        ) {
-          quoted =
-            quoted.viewOnceMessageV2Extension.message;
-
-          changed = true;
-          continue;
-        }
-
-        // Old View Once
-        if (
-          quoted.viewOnceMessage?.message
-        ) {
-          quoted =
-            quoted.viewOnceMessage.message;
-
-          changed = true;
-          continue;
-        }
-
-        // Document with caption
-        if (
-          quoted.documentWithCaptionMessage?.message
-        ) {
-          quoted =
-            quoted.documentWithCaptionMessage.message;
-
-          changed = true;
-          continue;
-        }
-      }
-
-      const mediaTypes = [
+      return [
         'imageMessage',
         'videoMessage',
         'audioMessage',
         'stickerMessage',
         'documentMessage'
-      ];
-
-      return mediaTypes.some(
-        type => Boolean(quoted?.[type])
-      );
+      ].some(type => Boolean(quoted?.[type]));
     };
 
-    // ==========================================================
-    // AUTOMATIC VV2
-    // ==========================================================
-
-    if (
-      commandText &&
-      isEmojiOnly(commandText)
-    ) {
-
+    if (isEmojiOnly(commandText)) {
       const contextInfo =
-        msg?.message
-          ?.extendedTextMessage
-          ?.contextInfo;
+        msg.message?.extendedTextMessage?.contextInfo;
 
-      const repliedToMedia =
-        isRepliedMedia(contextInfo);
+      if (isRepliedMedia(contextInfo)) {
+        const vv2Command = commands.get('vv2');
 
-      if (repliedToMedia) {
-
-        console.log(
-          `[VV2-EMOJI:${account?.phone || 'unknown'}] ` +
-          `🎯 Emoji reply detected: ${commandText}`
-        );
-
-        // ------------------------------------------------------
-        // FIND VV2 COMMAND
-        // ------------------------------------------------------
-
-        const vv2Command =
-          commands.get('vv2');
-
-        if (!vv2Command) {
-
-          console.error(
-            '[VV2-EMOJI] ❌ vv2 command is not loaded.'
-          );
-
-          return;
-        }
-
-        // ------------------------------------------------------
-        // OWNER CHECK
-        //
-        // vv2 itself also checks fromMe.
-        // This extra check prevents normal users from
-        // triggering it with emojis.
-        // ------------------------------------------------------
-
-        if (!msg?.key?.fromMe) {
-
-          console.log(
-            `[VV2-EMOJI:${account?.phone || 'unknown'}] ` +
-            `🚫 Non-owner emoji ignored.`
-          );
-
-          return;
-        }
-
-        const senderName =
-          msg.pushName ||
-          senderNumber ||
-          'Unknown';
+        if (!vv2Command || !msg.key.fromMe) return;
 
         const sender = {
-          name: senderName,
+          name: msg.pushName || senderNumber || 'Unknown',
           number: senderNumber,
           jid: senderJid
         };
-
-        console.log(
-          `[VV2-EMOJI:${account?.phone || 'unknown'}] ` +
-          `🚀 Executing VV2 automatically`
-        );
-
-        // ------------------------------------------------------
-        // EXECUTE VV2
-        // ------------------------------------------------------
 
         await vv2Command.execute(
           sock,
@@ -1606,116 +1399,49 @@ if (msg.key.fromMe && !isGroup && jid !== 'status@broadcast') {
       }
     }
 
-    // ==========================================================
-    // NO TEXT / NO COMMAND
-    // ==========================================================
+    // ── AI chatbot / commands
+    const isCommand = config.prefix
+      ? commandText.startsWith(config.prefix)
+      : false;
 
-    if (!commandText) {
+    if (!isCommand) {
+      await handleChatbot(sock, msg, account);
       return;
     }
 
-    // ==========================================================
-    // PREFIX
-    // ==========================================================
+    const text = commandText
+      .slice(config.prefix.length)
+      .trim();
 
-    if (config.prefix) {
+    if (!text) return;
 
-      if (!commandText.startsWith(config.prefix)) {
-        return;
-      }
+    const [rawCmd, ...args] = text.split(/\s+/);
+    const cmdName = String(rawCmd || '').toLowerCase();
+    const command = commands.get(cmdName);
 
-      commandText =
-        commandText
-          .slice(config.prefix.length)
-          .trim();
-    }
-
-    if (!commandText) {
-      return;
-    }
-
-    // ==========================================================
-    // COMMAND + ARGUMENTS
-    // ==========================================================
-
-    const [
-      rawCmd,
-      ...args
-    ] = commandText.split(/\s+/);
-
-    const cmdName =
-      String(rawCmd || '').toLowerCase();
-
-    const command =
-      commands.get(cmdName);
-
-    // ==========================================================
-    // UNKNOWN COMMAND
-    // ==========================================================
-
-    if (!command) {
-      return;
-    }
-
-    // ==========================================================
-    // SENDER INFORMATION
-    // ==========================================================
-
-    const senderName =
-      msg.pushName ||
-      senderNumber ||
-      'Unknown';
+    if (!command) return;
 
     const sender = {
-      name: senderName,
+      name: msg.pushName || senderNumber || 'Unknown',
       number: senderNumber,
       jid: senderJid
     };
 
     console.log(
-      `[Command:${account?.phone || 'unknown'}] ` +
-      `${config.prefix}${cmdName} ` +
-      `from ${sender.number} ` +
-      `(${sender.name})`
+      `[Command:${account?.phone || 'unknown'}] ${config.prefix}${cmdName} from ${sender.number}`
     );
-
-    // ==========================================================
-    // KEEP PRESENCE ALIVE WHILE COMMAND IS RUNNING
-    // ==========================================================
 
     let presenceInterval = null;
 
     if (presenceStarted && presenceType) {
-
-      presenceInterval = setInterval(
-        async () => {
-
-          try {
-
-            await sock.sendPresenceUpdate(
-              presenceType,
-              jid
-            );
-
-          } catch (error) {
-
-            console.error(
-              `[Presence] ❌ Refresh failed:`,
-              error?.message || error
-            );
-          }
-
-        },
-        4000
-      );
+      presenceInterval = setInterval(async () => {
+        try {
+          await sock.sendPresenceUpdate(presenceType, jid);
+        } catch {}
+      }, 4000);
     }
 
     try {
-
-      // ========================================================
-      // EXECUTE COMMAND — ONLY ONCE
-      // ========================================================
-
       await command.execute(
         sock,
         msg,
@@ -1724,58 +1450,20 @@ if (msg.key.fromMe && !isGroup && jid !== 'status@broadcast') {
         sender,
         account
       );
-
     } finally {
-
-      // ========================================================
-      // STOP PRESENCE REFRESH
-      // ========================================================
-
-      if (presenceInterval) {
-
-        clearInterval(
-          presenceInterval
-        );
-
-        presenceInterval = null;
-      }
+      if (presenceInterval) clearInterval(presenceInterval);
     }
 
   } catch (error) {
-
     console.error(
       `[MessageHandler:${account?.phone || 'unknown'}] ❌`,
       error
     );
-
   } finally {
-
-    // ==========================================================
-    // STOP TYPING / RECORDING
-    // ==========================================================
-
     if (presenceStarted) {
-
       try {
-
-        await sock.sendPresenceUpdate(
-          'paused',
-          jid
-        );
-
-        console.log(
-          `[Presence:${account?.phone || 'unknown'}] ` +
-          `⏹️ Presence stopped → ${jid}`
-        );
-
-      } catch (error) {
-
-        console.error(
-          `[Presence:${account?.phone || 'unknown'}] ` +
-          `❌ Failed to stop presence:`,
-          error?.message || error
-        );
-      }
+        await sock.sendPresenceUpdate('paused', jid);
+      } catch {}
     }
   }
 }
