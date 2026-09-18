@@ -1,81 +1,136 @@
 // ============================================================
-// MUFASER-X — AI IMAGE EDITOR
-// Powered by PixelAPI
-//
-// Usage:
-// Reply to an image with:
-// .aiedit add a kid in the middle
-//
-// Examples:
-// .aiedit change the background to a beach
-// .aiedit make everyone wear black suits
-// .aiedit turn this into anime style
-// .aiedit add sunglasses
-// .aiedit remove the person on the left
+// MUFASER-X — AI IMAGE EDIT
+// Powered By PixelAPI
+// Developer: ROMA-TECH
 // ============================================================
 
 const {
   downloadContentFromMessage
 } = require('@whiskeysockets/baileys');
 
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
-// ============================================================
-// DOWNLOAD IMAGE
-// ============================================================
+const API_KEY = process.env.PIXEL_API_KEY;
 
-async function downloadImage(imageMessage) {
+const sleep = (ms) =>
+  new Promise(resolve => setTimeout(resolve, ms));
+
+async function downloadImage(message) {
+
+  const type = Object.keys(message)[0];
 
   const stream =
     await downloadContentFromMessage(
-      imageMessage,
+      message[type],
       'image'
     );
 
   const chunks = [];
 
-  for await (
-    const chunk of stream
-  ) {
-
+  for await (const chunk of stream) {
     chunks.push(chunk);
-
   }
 
-  const buffer =
-    Buffer.concat(chunks);
+  return Buffer.concat(chunks);
+}
 
-  if (!buffer.length) {
+async function pollPixelAPI(generationId) {
 
-    throw new Error(
-      'Downloaded image is empty.'
+  const maxAttempts = 30;
+
+  for (let i = 0; i < maxAttempts; i++) {
+
+    await sleep(2500);
+
+    const response = await fetch(
+      `https://api.pixelapi.dev/v1/image/${generationId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'User-Agent': 'MUFASER-X/1.0'
+        }
+      }
     );
 
+    const data = await response.json();
+
+    console.log(
+      '[PixelAPI] Status:',
+      JSON.stringify(data)
+    );
+
+    if (data.status === 'completed') {
+
+      if (!data.output_url) {
+        throw new Error(
+          'PixelAPI completed the job but returned no output_url.'
+        );
+      }
+
+      return data.output_url;
+    }
+
+    if (
+      data.status === 'failed' ||
+      data.status === 'blocked'
+    ) {
+
+      throw new Error(
+        data.error ||
+        `PixelAPI job ${data.status}.`
+      );
+    }
   }
 
-  return buffer;
-
-}
-
-
-// ============================================================
-// GET REPLIED MESSAGE
-// ============================================================
-
-function getQuotedMessage(msg) {
-
-  return (
-    msg?.message
-      ?.extendedTextMessage
-      ?.contextInfo
-      ?.quotedMessage
+  throw new Error(
+    'PixelAPI processing timed out.'
   );
-
 }
 
+async function getPixelOutput(data) {
 
-// ============================================================
-// COMMAND
-// ============================================================
+  // Direct result
+  if (data.output_url) {
+    return data.output_url;
+  }
+
+  // Async result
+  if (data.generation_id) {
+    return await pollPixelAPI(
+      data.generation_id
+    );
+  }
+
+  // Some responses may use id
+  if (data.id) {
+    return await pollPixelAPI(
+      data.id
+    );
+  }
+
+  throw new Error(
+    `PixelAPI returned no output image or generation ID. Response: ${JSON.stringify(data)}`
+  );
+}
+
+async function downloadOutput(url) {
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(
+      `Could not download edited image (${response.status}).`
+    );
+  }
+
+  const arrayBuffer =
+    await response.arrayBuffer();
+
+  return Buffer.from(arrayBuffer);
+}
 
 module.exports = {
 
@@ -83,213 +138,153 @@ module.exports = {
 
   aliases: [
     'editai',
-    'aiphoto',
     'imageedit'
   ],
 
-  desc:
-    'Edit an image using AI',
+  description:
+    'Edit an image using AI instructions.',
 
-  category:
-    'AI',
+  category: 'AI',
 
   usage:
-    '.aiedit <instruction> [reply to image]',
+    '.aiedit <instruction>',
 
-
-  async execute(
-    sock,
-    msg,
-    jid,
-    args,
-    sender,
-    account
-  ) {
+  async execute(sock, m, args) {
 
     try {
 
-      // ======================================================
-      // CHECK API KEY
-      // ======================================================
-
-      const apiKey =
-        process.env.PIXEL_API_KEY;
-
-      if (!apiKey) {
+      if (!API_KEY) {
 
         return await sock.sendMessage(
-          jid,
+          m.key.remoteJid,
           {
             text:
-              '❌ *PixelAPI is not configured.*\n\n' +
-              '⚙️ Add `PIXEL_API_KEY` to your `.env` file.'
+              '❌ *AI image editing failed.*\n\n' +
+              '⚠️ *Reason:* PIXEL_API_KEY is missing from `.env`.'
           },
           {
-            quoted: msg
+            quoted: m
           }
         );
-
       }
 
-
-      // ======================================================
-      // GET INSTRUCTION
-      // ======================================================
-
       const instruction =
-        args
-          ?.join(' ')
-          ?.trim();
-
+        args.join(' ').trim();
 
       if (!instruction) {
 
         return await sock.sendMessage(
-          jid,
+          m.key.remoteJid,
           {
             text:
-              '❌ *Please tell me what you want to change.*\n\n' +
+              '❌ *Missing instruction.*\n\n' +
 
-              '*Example:*\n' +
+              'Example:\n' +
               '`.aiedit add a kid in the middle`\n\n' +
 
-              '*More examples:*\n' +
+              'Other examples:\n' +
               '`.aiedit change the background to a beach`\n' +
-              '`.aiedit add sunglasses`\n' +
-              '`.aiedit make everyone wear black suits`\n' +
-              '`.aiedit turn this into anime style`'
+              '`.aiedit make the shirt black`\n' +
+              '`.aiedit remove the person on the left`'
           },
           {
-            quoted: msg
+            quoted: m
           }
         );
-
       }
 
+      // --------------------------------------------------------
+      // FIND REPLIED IMAGE
+      // --------------------------------------------------------
 
-      // ======================================================
-      // GET QUOTED MESSAGE
-      // ======================================================
+      const contextInfo =
+        m.message?.extendedTextMessage
+          ?.contextInfo;
 
-      const quoted =
-        getQuotedMessage(msg);
+      const quotedMessage =
+        contextInfo?.quotedMessage;
 
+      let imageMessage = null;
 
-      if (!quoted) {
+      if (quotedMessage?.imageMessage) {
 
-        return await sock.sendMessage(
-          jid,
-          {
-            text:
-              '❌ *Reply to an image with .aiedit*\n\n' +
-              '*Example:*\n' +
-              'Reply to a photo and type:\n' +
-              '`.aiedit add a kid in the middle`'
-          },
-          {
-            quoted: msg
-          }
-        );
+        imageMessage =
+          quotedMessage.imageMessage;
 
+      } else if (
+        m.message?.imageMessage
+      ) {
+
+        imageMessage =
+          m.message.imageMessage;
       }
-
-
-      // ======================================================
-      // CHECK IMAGE
-      // ======================================================
-
-      const imageMessage =
-        quoted.imageMessage;
-
 
       if (!imageMessage) {
 
         return await sock.sendMessage(
-          jid,
+          m.key.remoteJid,
           {
             text:
-              '❌ *The replied message is not an image.*\n\n' +
-              'Reply to a photo and tell me what to edit.'
+              '❌ *Reply to an image first.*\n\n' +
+              `Example:\n.reply to an image with \`.aiedit ${instruction}\``
           },
           {
-            quoted: msg
+            quoted: m
           }
         );
-
       }
 
-
-      // ======================================================
-      // PROCESSING REACTION
-      // ======================================================
-
       await sock.sendMessage(
-        jid,
+        m.key.remoteJid,
         {
-          react: {
-            text: '🎨',
-            key: msg.key
-          }
+          text:
+            '🎨 *MUFASER-X AI EDIT*\n\n' +
+            '⏳ Processing your image...\n' +
+            '🤖 Powered By PixelAPI'
+        },
+        {
+          quoted: m
         }
       );
 
-
-      // ======================================================
+      // --------------------------------------------------------
       // DOWNLOAD IMAGE
-      // ======================================================
-
-      console.log(
-        '[AIEdit] ⬇️ Downloading image...'
-      );
+      // --------------------------------------------------------
 
       const imageBuffer =
-        await downloadImage(
+        await downloadImage({
           imageMessage
+        });
+
+      if (!imageBuffer?.length) {
+
+        throw new Error(
+          'Failed to download the source image.'
         );
+      }
 
-
-      console.log(
-        '[AIEdit] 📦 Image:',
-        imageBuffer.length,
-        'bytes'
-      );
-
-
-      // ======================================================
-      // DETERMINE MIME TYPE
-      // ======================================================
-
-      const mimeType =
+      const mime =
         imageMessage.mimetype ||
         'image/jpeg';
 
-
-      // ======================================================
-      // CONVERT TO DATA URI
-      // ======================================================
-
       const base64 =
-        imageBuffer.toString(
-          'base64'
-        );
+        imageBuffer.toString('base64');
 
       const dataUri =
-        `data:${mimeType};base64,${base64}`;
+        `data:${mime};base64,${base64}`;
 
-
-      // ======================================================
-      // SEND TO PIXELAPI
-      // ======================================================
+      // --------------------------------------------------------
+      // PIXELAPI
+      // --------------------------------------------------------
 
       console.log(
-        '[AIEdit] 🤖 Sending image to PixelAPI...'
+        '[PixelAPI] Sending image edit request...'
       );
 
       console.log(
-        '[AIEdit] 📝 Instruction:',
+        '[PixelAPI] Instruction:',
         instruction
       );
-
 
       const response =
         await fetch(
@@ -299,7 +294,7 @@ module.exports = {
 
             headers: {
               'Authorization':
-                `Bearer ${apiKey}`,
+                `Bearer ${API_KEY}`,
 
               'Content-Type':
                 'application/json',
@@ -308,200 +303,124 @@ module.exports = {
                 'MUFASER-X/1.0'
             },
 
-            body:
-              JSON.stringify({
+            body: JSON.stringify({
 
-                image:
-                  dataUri,
+              image: dataUri,
 
-                prompt:
-                  instruction,
+              prompt: instruction,
 
-                steps:
-                  40,
+              steps: 40,
 
-                cfg_scale:
-                  4.0
+              cfg_scale: 4.0
 
-              })
+            })
           }
         );
 
-
-      // ======================================================
-      // READ RESPONSE
-      // ======================================================
-
-      const data =
-        await response.json();
-
+      const rawText =
+        await response.text();
 
       console.log(
-        '[AIEdit] PixelAPI response:',
-        data
+        '[PixelAPI] HTTP:',
+        response.status
       );
 
+      console.log(
+        '[PixelAPI] Response:',
+        rawText
+      );
+
+      let data;
+
+      try {
+
+        data =
+          JSON.parse(rawText);
+
+      } catch {
+
+        throw new Error(
+          `PixelAPI returned invalid JSON: ${rawText.slice(0, 500)}`
+        );
+      }
 
       if (!response.ok) {
 
         throw new Error(
-          data?.error ||
-          data?.message ||
-          `PixelAPI returned HTTP ${response.status}`
+          data.error ||
+          data.message ||
+          `PixelAPI HTTP ${response.status}`
         );
-
       }
 
-
-      // ======================================================
-      // GET OUTPUT URL
-      // ======================================================
+      // --------------------------------------------------------
+      // GET OUTPUT
+      // --------------------------------------------------------
 
       const outputUrl =
-        data?.output_url;
+        await getPixelOutput(data);
 
+      console.log(
+        '[PixelAPI] Output:',
+        outputUrl
+      );
 
-      if (!outputUrl) {
-
-        throw new Error(
-          'PixelAPI did not return an output image.'
-        );
-
-      }
-
-
-      // ======================================================
+      // --------------------------------------------------------
       // DOWNLOAD RESULT
-      // ======================================================
+      // --------------------------------------------------------
 
-      console.log(
-        '[AIEdit] ⬇️ Downloading edited image...'
-      );
+      const outputBuffer =
+        await downloadOutput(outputUrl);
 
-
-      const resultResponse =
-        await fetch(
-          outputUrl
-        );
-
-
-      if (!resultResponse.ok) {
+      if (!outputBuffer?.length) {
 
         throw new Error(
-          `Could not download edited image. HTTP ${resultResponse.status}`
+          'PixelAPI returned an empty output image.'
         );
-
       }
 
-
-      const resultArrayBuffer =
-        await resultResponse.arrayBuffer();
-
-
-      const resultBuffer =
-        Buffer.from(
-          resultArrayBuffer
-        );
-
-
-      if (!resultBuffer.length) {
-
-        throw new Error(
-          'Edited image is empty.'
-        );
-
-      }
-
-
-      console.log(
-        '[AIEdit] ✅ Edited image:',
-        resultBuffer.length,
-        'bytes'
-      );
-
-
-      // ======================================================
+      // --------------------------------------------------------
       // SEND RESULT
-      // ======================================================
+      // --------------------------------------------------------
 
       await sock.sendMessage(
-        jid,
+        m.key.remoteJid,
         {
-          image:
-            resultBuffer,
-
-          mimetype:
-            'image/png',
+          image: outputBuffer,
 
           caption:
-            `🎨 *AI EDIT COMPLETE*\n\n` +
-            `📝 *Request:* ${instruction}\n\n` +
-            `⚡ *Powered By MUFASER-X*`
+            '✨ *AI IMAGE EDITED*\n\n' +
+            `📝 ${instruction}\n\n` +
+            '🤖 Powered By MUFASER-X\n' +
+            '👨‍💻 ROMA-TECH'
         },
         {
-          quoted: msg
+          quoted: m
         }
       );
-
-
-      // ======================================================
-      // SUCCESS REACTION
-      // ======================================================
-
-      await sock.sendMessage(
-        jid,
-        {
-          react: {
-            text: '✅',
-            key: msg.key
-          }
-        }
-      );
-
 
       console.log(
-        '[AIEdit] ✅ Image sent successfully.'
+        '[PixelAPI] AI edit completed successfully.'
       );
-
 
     } catch (error) {
 
       console.error(
-        '[AIEdit] ❌ Error:',
-        error?.message ||
+        '[AI EDIT ERROR]',
         error
       );
 
-
-      try {
-
-        await sock.sendMessage(
-          jid,
-          {
-            text:
-              `❌ *AI image editing failed.*\n\n` +
-              `⚠️ *Reason:* ${
-                error?.message ||
-                'Unknown error.'
-              }`
-          },
-          {
-            quoted: msg
-          }
-        );
-
-      } catch (sendError) {
-
-        console.error(
-          '[AIEdit] ❌ Could not send error:',
-          sendError?.message ||
-          sendError
-        );
-
-      }
-
+      await sock.sendMessage(
+        m.key.remoteJid,
+        {
+          text:
+            '❌ *AI image editing failed.*\n\n' +
+            `⚠️ *Reason:* ${error.message || 'Unknown error'}`
+        },
+        {
+          quoted: m
+        }
+      );
     }
-
   }
-
 };
